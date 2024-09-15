@@ -8,20 +8,18 @@ FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /src
 
 # プロジェクトファイルをコピーして復元
-COPY ["BChatServer/BChatServer.csproj", "BChatServer/"]
-RUN dotnet restore "BChatServer/BChatServer.csproj"
+COPY ["BChatServer.csproj", "BChatServer/"]
+RUN dotnet restore "BChatServer.csproj"
 
 # アプリケーションのソースコードをコピーしてビルド
 COPY . .
 WORKDIR "/src/BChatServer"
-RUN dotnet build "BChatServer.csproj" -c Release -o /app/build
+RUN dotnet build "BChatServer.csproj" -c Release
 
 # パブリッシュ
 FROM build AS publish
-RUN dotnet publish "BChatServer.csproj" -c Release -o /app/publish
+RUN dotnet publish "BChatServer.csproj" -c Release 
 
 # ランタイムイメージを指定してアプリケーションを実行
 FROM base AS final
-WORKDIR /app
-COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "BChatServer.dll"]
+ENTRYPOINT ["dotnet", "./app/publish/BChatServer.dll"]
