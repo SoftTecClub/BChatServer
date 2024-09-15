@@ -1,3 +1,10 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
+using StackExchange.Redis;
+using BChatServer.DB.Rdb;
+using Npgsql.EntityFrameworkCore.PostgreSQL;
+
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -5,14 +12,18 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-var app = builder.Build();
+// Redisの接続設定
+var redisConnectionString = builder.Configuration.GetSection("Redis")["ConnectionString"];
+builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConnectionString));
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+//DbContextの接続設定
+// PostgreSQLへの接続文字列を設定します
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+var app = builder.Build();
+app.UseSwagger();
+app.UseSwaggerUI();
+
 
 app.UseHttpsRedirection();
 

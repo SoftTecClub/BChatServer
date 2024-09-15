@@ -1,0 +1,54 @@
+# Ignore Visual Studio files
+.vs/
+*.suo
+*.user
+*.userprefs
+*.vscode/
+*.vssscc
+*_i.c
+*_p.c
+*.ncb
+*.sdf
+*.opensdf
+*.sln.docstates
+
+# Ignore build output
+bin/
+obj/
+
+# Ignore NuGet packages
+*.nuget.props
+*.nuget.targets
+packages/
+
+# Ignore MSTest test results
+TestResults/
+
+# Ignore Resharper cache files
+_resharper/
+
+# Ignore StyleCop settings
+StyleCop.settings
+
+# Ignore Visual Studio code coverage files
+*.coverage
+*.coveragexml
+
+# Ignore build logs
+*.log
+
+# Ignore .NET Core build artifacts
+*.dll
+*.exe
+*.pdb
+*.dll.config
+*.exe.config
+
+# Ignore generated files
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.[Pp]ublish.xml
+*.swp
+
+# Ignore macOS .DS_Store files
+.DS_Store
