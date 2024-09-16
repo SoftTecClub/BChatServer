@@ -19,6 +19,12 @@ RUN dotnet build "./BChatServer.csproj" -c Release -o /app/build
 FROM build AS publish
 RUN dotnet publish "./BChatServer.csproj" -c Release -o /app/publish
 
+# マイグレーションを実行するステージ
+FROM publish AS migration
+WORKDIR /app/publish
+# マイグレーションを実行
+RUN dotnet ef database update
+
 # ランタイムイメージを指定してアプリケーションを実行
 FROM base AS final
 WORKDIR /app
