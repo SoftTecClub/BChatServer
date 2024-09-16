@@ -25,7 +25,7 @@ services:
       - ConnectionStrings__DefaultConnection=Server=db;Port=5432;Database=bchat;User Id=myuser;Password=mypassword;
       - Redis__ConnectionString=redis:6379
     volumes:
-      - .:/app
+      - .:/src
     command: dotnet BChatServer.dll --urls=http://+:8080
 
   redis:
