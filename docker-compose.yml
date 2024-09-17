@@ -5,10 +5,12 @@ services:
     restart: always
     environment:
       - POSTGRES_USER=myuser
-      - POSTGRES_PASSWORD=mypassword
+      - POSTGRES_PASSWORD=dd
       - POSTGRES_DB=bchat
     volumes:
       - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"  
 
   web:
     build:
@@ -25,7 +27,7 @@ services:
     volumes:
       - .:/src
     command: dotnet BChatServer.dll --urls=http://+:8080
-
+    
   redis:
     image: redis:latest
     container_name: trans_redis

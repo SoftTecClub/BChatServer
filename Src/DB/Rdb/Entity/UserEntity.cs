@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
-namespace BChatServer.DB.Rdb.Entity
+namespace BChatServer.Src.DB.Rdb.Entity
 {
     /// <summary>
     /// ユーザデータを格納するためのエンティティ

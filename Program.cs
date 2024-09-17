@@ -1,8 +1,7 @@
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
-using BChatServer.DB.Rdb;
-using Npgsql.EntityFrameworkCore.PostgreSQL;
+using BChatServer.Src.DB.Rdb;
+using BChatServer.Src.Service;
 
 namespace BChatServer{
 
@@ -20,7 +19,7 @@ namespace BChatServer{
             if(redisConnectionString  is null){
                 throw new ArgumentNullException("Redis connection string is not set");
             }else{
-                builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConnectionString));
+                builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect($"{redisConnectionString},abortConnect=false"));
             }
             
             //DbContextの接続設定
@@ -31,7 +30,8 @@ namespace BChatServer{
             }else{
                 builder.Services.AddDbContext<MyContext>(options => options.UseNpgsql(connectionString));
             }
-
+            // TokenManageServiceの登録
+            builder.Services.AddTransient<TokenManageService>();
             // Add controllers
             builder.Services.AddControllers();
             
@@ -46,5 +46,6 @@ namespace BChatServer{
 
 
         }
+
     }
 }

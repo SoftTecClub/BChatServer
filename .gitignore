@@ -15,7 +15,7 @@
 # Ignore build output
 bin/
 obj/
-
+Migrations/
 # Ignore NuGet packages
 *.nuget.props
 *.nuget.targets
