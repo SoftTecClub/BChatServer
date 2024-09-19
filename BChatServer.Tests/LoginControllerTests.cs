@@ -80,6 +80,10 @@ namespace BChatServer.Tests;
             Assert.NotNull(okResult.Value);
         }
 
+        /// <summary>
+        /// 失敗パターン
+        /// 直接ハッシュ値を送信した時
+        /// </summary>
         [Fact]
         public void Post_LoginFailed_SendHasPassword_ReturnsBadRequest()
         {
