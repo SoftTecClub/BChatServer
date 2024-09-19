@@ -63,6 +63,16 @@ public class TokenManageService
     }
 
     /// <summary>
+    /// userIdに対応するトークンを取得する
+    /// </summary>
+    /// <param name="userId"></param>
+    /// <returns></returns>
+    public string? GetToken(string userId)
+    {
+        var db = _redis.GetDatabase();
+        return db.StringGet(userId);
+    }
+    /// <summary>
     /// 秘密鍵を生成する
     /// </summary>
     /// <returns></returns>

@@ -74,10 +74,11 @@ namespace BChatServer.Tests;
             Console.WriteLine("UserName:"+loginModel.Name);
             // Act
             var result = _controller.Post(loginModel);
-
-            // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            Assert.NotNull(okResult.Value);
+            var responseBody = Assert.IsType<LoginResponse>(okResult.Value);
+            var token = _mockTokenService.Object.GenerateToken(_users[0].UserId);
+            // Assert
+            Assert.Equal(responseBody.Token, token);
         }
 
         /// <summary>
@@ -96,5 +97,13 @@ namespace BChatServer.Tests;
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
             Assert.NotNull(badRequestResult.Value);
+        }
+
+        /// <summary>
+        /// 重複ログイン
+        /// </summary>
+        [Fact]
+        public void Post_LoginFailed_TokenExpired(){
+
         }
     }
