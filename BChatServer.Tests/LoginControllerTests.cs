@@ -33,18 +33,19 @@ namespace BChatServer.Tests;
             _mockDatabase = new Mock<IDatabase>();
 
             _mockRedis.Setup(_ => _.GetDatabase(It.IsAny<int>(), It.IsAny<object>())).Returns(_mockDatabase.Object);
+
+            // TokenManageServiceのモックを設定
             _mockTokenService = new Mock<TokenManageService>(_mockRedis.Object);
             _mockTokenService.SetupProperty(_ => _.ExpiryDurationMinutes, 1);
 
             // テストデータの追加
             _users = UserCommonFunc.CreateUserEntity(10);
             _users.ForEach(u => 
-                {
-                    _userPlainPass.Add(u.UserId, u.Password);
-                    u.Password = LoginModel.HashPassword(u.Password);
-                }
-            );
-            //モックにダミーデータを設定
+            {
+                _userPlainPass.Add(u.UserId, u.Password);
+                u.Password = LoginModel.HashPassword(u.Password);
+            });
+
             // DbSet<UserEntity> のモックを作成
             var mockDbSet = new Mock<DbSet<UserEntity>>();
             var usersQueryable = _users.AsQueryable();
@@ -52,17 +53,12 @@ namespace BChatServer.Tests;
             mockDbSet.As<IQueryable<UserEntity>>().Setup(m => m.Expression).Returns(usersQueryable.Expression);
             mockDbSet.As<IQueryable<UserEntity>>().Setup(m => m.ElementType).Returns(usersQueryable.ElementType);
             mockDbSet.As<IQueryable<UserEntity>>().Setup(m => m.GetEnumerator()).Returns(usersQueryable.GetEnumerator());
-            // MyContext の Users プロパティにモックの DbSet を設定
+
             _mockContext.Setup(c => c.Users).Returns(mockDbSet.Object);
 
-            
-            _mockRedis = new Mock<IConnectionMultiplexer>();
-            
-            
-
+            // LoginControllerのインスタンスを作成
             _controller = new LoginController(_mockContext.Object, _mockRedis.Object, _mockTokenService.Object);
         }
-
         /// <summary>
         /// テスト接続成功パターン
         /// </summary>
@@ -71,12 +67,13 @@ namespace BChatServer.Tests;
         {
             // Arrange
             var loginModel = new LoginModel { Name = _users[0].UserId, Password = _userPlainPass[_users[0].UserId] };
-            Console.WriteLine("UserName:"+loginModel.Name);
             // Act
             var result = _controller.Post(loginModel);
             var okResult = Assert.IsType<OkObjectResult>(result);
             var responseBody = Assert.IsType<LoginResponse>(okResult.Value);
-            var token = _mockTokenService.Object.GenerateToken(_users[0].UserId);
+            string token = _mockRedis.Object.GetDatabase().StringGet(_users[0].UserId).ToString();
+            
+            Console.WriteLine("Token:"+token);
             // Assert
             Assert.Equal(responseBody.Token, token);
         }
@@ -100,10 +97,32 @@ namespace BChatServer.Tests;
         }
 
         /// <summary>
-        /// 重複ログイン
+        /// tokenの有効期限が切れた時DBからトークンが削除されるか
         /// </summary>
         [Fact]
         public void Post_LoginFailed_TokenExpired(){
+            var loginModel = new LoginModel { Name = _users[0].UserId, Password = _userPlainPass[_users[0].UserId] };
+            // Act
+            _controller.Post(loginModel);
+            Thread.Sleep(TimeSpan.FromSeconds(61));
+            var token = _mockTokenService.Object.GetToken(_users[0].UserId);
+            Assert.Null(token);
+        }
 
+        [Fact]
+        public void Post_Login_ReGenerate_Token(){
+            var loginModel = new LoginModel { Name = _users[0].UserId, Password = _userPlainPass[_users[0].UserId] };
+            // Act
+            var result = _controller.Post(loginModel);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var responseBody = Assert.IsType<LoginResponse>(okResult.Value);
+
+            var loginModelSec = new LoginModel { Name = _users[0].UserId, Password = _userPlainPass[_users[0].UserId] };
+
+            var resultSec = _controller.Post(loginModelSec);
+            var okResultSec = Assert.IsType<OkObjectResult>(resultSec);
+            var responseBodySec = Assert.IsType<LoginResponse>(okResultSec.Value);
+            // Assert
+            Assert.NotEqual(responseBody.Token, responseBodySec.Token);
         }
     }
