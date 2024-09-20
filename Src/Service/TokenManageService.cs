@@ -22,8 +22,9 @@ public class TokenManageService
 
     /// <summary>
     /// トークンの有効期限
+    /// デフォルト１時間
     /// </summary>
-    public virtual int ExpiryDurationMinutes { get; set; } = 30;
+    public virtual int ExpiryDurationSec { get; set; } = 30*60;
     
 
     public TokenManageService(IConnectionMultiplexer redis)
@@ -43,13 +44,15 @@ public class TokenManageService
 
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.ASCII.GetBytes(SecretKey);
+        var uniqueId = Guid.NewGuid().ToString(); // ランダムな要素を追加
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, userId)
+                new Claim(ClaimTypes.NameIdentifier, userId),
+                new Claim("unique_id", uniqueId) 
             }),
-            Expires = DateTime.UtcNow.AddMinutes(ExpiryDurationMinutes),
+            Expires = DateTime.UtcNow.AddSeconds(ExpiryDurationSec),
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
         };
 
@@ -57,7 +60,7 @@ public class TokenManageService
         var tokenString = tokenHandler.WriteToken(token);
 
         // 新しいトークンを保存
-        db.StringSet(userId, tokenString, TimeSpan.FromMinutes(ExpiryDurationMinutes));
+        db.StringSet(userId, tokenString, TimeSpan.FromSeconds(ExpiryDurationSec));
 
         return tokenString;
     }

@@ -2,13 +2,17 @@ using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 using BChatServer.Src.DB.Rdb;
 using BChatServer.Src.Service;
+using Serilog;
 
 namespace BChatServer{
 
     public static class Program{
         public static void Main(string[] args){
             var builder = WebApplication.CreateBuilder(args);
-
+            // ロガーの設定はアプリケーションの開始時に一度だけ行う
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.Console()
+                .CreateLogger();
             // Add services to the container.
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();

@@ -2,6 +2,7 @@ using BChatServer.Src.DB.Rdb;
 using BChatServer.Src.DB.Rdb.Entity;
 using BChatServer.Src.Service;
 using Microsoft.AspNetCore.Mvc;
+using Serilog;
 using StackExchange.Redis;
 using System.Security.Cryptography;
 using System.Text;
@@ -48,10 +49,11 @@ namespace BChatServer.Src.Controllers
         /// <returns>ステータス200の時トークンを返す</returns>
         [HttpPost]
         public IActionResult Post([FromBody] LoginModel model)
-        {
+        {         
             UserEntity? user = _context.Users.FirstOrDefault(u => u.UserId == model.Name && u.Password == model.Password);
             List<UserEntity> users = _context.Users.ToList();
             if(user is null){
+                 Log.Information("Login request from {Name} Login Failed", model.Name);
                 return BadRequest("Login failed");
             }
             

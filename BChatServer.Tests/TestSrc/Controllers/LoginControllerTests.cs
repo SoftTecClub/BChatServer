@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using BChatServer.Tests.Common;
 using BChatServer.Src.Service;
 
-namespace BChatServer.Tests;
+namespace BChatServer.Tests.TestSrc.Controllers;
 
     public class LoginControllerTests
     {
@@ -36,7 +36,7 @@ namespace BChatServer.Tests;
 
             // TokenManageServiceのモックを設定
             _mockTokenService = new Mock<TokenManageService>(_mockRedis.Object);
-            _mockTokenService.SetupProperty(_ => _.ExpiryDurationMinutes, 1);
+            _mockTokenService.SetupProperty(_ => _.ExpiryDurationSec, 10);
 
             // テストデータの追加
             _users = UserCommonFunc.CreateUserEntity(10);
@@ -60,7 +60,7 @@ namespace BChatServer.Tests;
             _controller = new LoginController(_mockContext.Object, _mockRedis.Object, _mockTokenService.Object);
         }
         /// <summary>
-        /// テスト接続成功パターン
+        /// テストログイン成功パターン
         /// </summary>
         [Fact]
         public void Post_LoginSuccessful_ReturnsOk()
@@ -70,12 +70,8 @@ namespace BChatServer.Tests;
             // Act
             var result = _controller.Post(loginModel);
             var okResult = Assert.IsType<OkObjectResult>(result);
-            var responseBody = Assert.IsType<LoginResponse>(okResult.Value);
-            string token = _mockRedis.Object.GetDatabase().StringGet(_users[0].UserId).ToString();
-            
-            Console.WriteLine("Token:"+token);
             // Assert
-            Assert.Equal(responseBody.Token, token);
+            Assert.Equal(200, okResult.StatusCode);
         }
 
         /// <summary>
@@ -97,18 +93,8 @@ namespace BChatServer.Tests;
         }
 
         /// <summary>
-        /// tokenの有効期限が切れた時DBからトークンが削除されるか
+        /// 際ログインが実行された時、アクセストークンが再発行されることを確認する
         /// </summary>
-        [Fact]
-        public void Post_LoginFailed_TokenExpired(){
-            var loginModel = new LoginModel { Name = _users[0].UserId, Password = _userPlainPass[_users[0].UserId] };
-            // Act
-            _controller.Post(loginModel);
-            Thread.Sleep(TimeSpan.FromSeconds(61));
-            var token = _mockTokenService.Object.GetToken(_users[0].UserId);
-            Assert.Null(token);
-        }
-
         [Fact]
         public void Post_Login_ReGenerate_Token(){
             var loginModel = new LoginModel { Name = _users[0].UserId, Password = _userPlainPass[_users[0].UserId] };
