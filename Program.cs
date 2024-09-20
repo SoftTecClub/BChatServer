@@ -3,11 +3,13 @@ using StackExchange.Redis;
 using BChatServer.Src.DB.Rdb;
 using BChatServer.Src.Service;
 using Serilog;
+using BChatServer.Src.Controllers;
 
 namespace BChatServer{
 
     public static class Program{
         public static void Main(string[] args){
+             var hash = LoginModel.HashPassword("Test");
             var builder = WebApplication.CreateBuilder(args);
             // ロガーの設定はアプリケーションの開始時に一度だけ行う
             Log.Logger = new LoggerConfiguration()

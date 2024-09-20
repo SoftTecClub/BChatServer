@@ -19,6 +19,8 @@ namespace BChatServer.Tests.TestSrc.Controllers;
         private readonly Mock<TokenManageService> _mockTokenService;
         private readonly Mock<IDatabase> _mockDatabase;
 
+        private readonly Mock<IDatabase> _mockDb;
+
         /// <summary>
         /// ユーザ名とプレーンパスワードのペア
         /// </summary>
@@ -27,12 +29,38 @@ namespace BChatServer.Tests.TestSrc.Controllers;
 
         public LoginControllerTests()
         {
+            //モックデータベースに対しての操作を行うためのデータストア
+            var mockDataStore = new Dictionary<string, RedisValue>();
+
             // モックの設定
             _mockContext = new Mock<MyContext>();
             _mockRedis = new Mock<IConnectionMultiplexer>();
             _mockDatabase = new Mock<IDatabase>();
+            _mockDb = new Mock<IDatabase>();
 
-            _mockRedis.Setup(_ => _.GetDatabase(It.IsAny<int>(), It.IsAny<object>())).Returns(_mockDatabase.Object);
+            // RedisからDBを返す時モックDBを返すようにする
+            _mockRedis.Setup(_ => _.GetDatabase(It.IsAny<int>(), It.IsAny<object>())).Returns(_mockDb.Object);
+
+            //StringSetメソッドがよびだれた時の処理
+            // モックの設定
+            _mockDb.Setup(db => db.StringSet( It.IsAny<RedisKey>(),
+                It.IsAny<RedisValue>(),
+                It.IsAny<TimeSpan?>(),
+                It.IsAny<bool>(),
+                It.IsAny<When>(),
+                It.IsAny<CommandFlags>()))
+                .Returns((RedisKey key, RedisValue value, TimeSpan? expiry, bool keepTtl, When when, CommandFlags flags) =>
+                {
+                    mockDataStore[key.ToString()] = value;
+                    return true;
+                });
+
+            _mockDb.Setup(db => db.StringGet(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()))
+                .Returns((RedisKey key, CommandFlags flags) =>
+                {
+                    return mockDataStore.TryGetValue(key.ToString(), out var value) ? value : RedisValue.Null;
+                });
+
 
             // TokenManageServiceのモックを設定
             _mockTokenService = new Mock<TokenManageService>(_mockRedis.Object);
@@ -72,6 +100,7 @@ namespace BChatServer.Tests.TestSrc.Controllers;
             var okResult = Assert.IsType<OkObjectResult>(result);
             // Assert
             Assert.Equal(200, okResult.StatusCode);
+            Assert.NotNull(okResult.Value);
         }
 
         /// <summary>

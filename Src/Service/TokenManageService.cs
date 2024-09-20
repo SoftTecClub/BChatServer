@@ -18,26 +18,40 @@ public class TokenManageService
 {
     private static readonly string SecretKey = GenerateSecretKey(); 
     
+    private static LinkedList<string> TokenBlacklist = new LinkedList<string>();
+    private const int MaxBlacklistSize = 100; // ブラックリストの最大サイズ
     private readonly IConnectionMultiplexer _redis;
 
     /// <summary>
     /// トークンの有効期限
     /// デフォルト１時間
     /// </summary>
-    public virtual int ExpiryDurationSec { get; set; } = 30*60;
+    public virtual int ExpiryDurationSec { get; set; } = 60*60;
     
 
     public TokenManageService(IConnectionMultiplexer redis)
     {
         _redis = redis;
     }
+   
+   /// <summary>
+   /// トークンを生成する
+   /// </summary>
+   /// <param name="userId">ユーザID</param>
+   /// <returns></returns>
     public string GenerateToken(string userId)
     {
         var db = _redis.GetDatabase();
-        var oldToken = db.StringGet(userId);
+        string? oldToken = GetToken(userId);
 
         if (!string.IsNullOrEmpty(oldToken))
         {
+            if (TokenBlacklist.Count >= MaxBlacklistSize)
+            {
+                // ブラックリストのサイズが最大値を超えた場合、最も古いトークンを削除
+                TokenBlacklist.RemoveFirst();
+            }
+            TokenBlacklist.AddLast(oldToken);
             // 古いトークンを無効化
             db.KeyDelete(userId);
         }
@@ -60,7 +74,12 @@ public class TokenManageService
         var tokenString = tokenHandler.WriteToken(token);
 
         // 新しいトークンを保存
-        db.StringSet(userId, tokenString, TimeSpan.FromSeconds(ExpiryDurationSec));
+        bool isSet = db.StringSet(userId, tokenString, TimeSpan.FromSeconds(ExpiryDurationSec));
+        if (!isSet)
+        {
+            throw new Exception("トークンの保存に失敗しました。");
+            
+        }
 
         return tokenString;
     }
@@ -94,23 +113,29 @@ public class TokenManageService
     /// <returns>トークンが有効であれば true、無効であれば false</returns>
     public bool ValidateToken(string token)
     {
+        if (TokenBlacklist.Contains(token))
+        {
+            return false; // トークンがブラックリストにある場合は無効
+        }
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.ASCII.GetBytes(SecretKey);
         try
         {
-            tokenHandler.ValidateToken(token, new TokenValidationParameters
+            var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(key),
                 ValidateIssuer = false,
                 ValidateAudience = false,
-                ClockSkew = TimeSpan.Zero
+                ClockSkew = TimeSpan.Zero // 時間のずれを許容しない
             }, out SecurityToken validatedToken);
 
-            return true;
+            // トークンが有効であれば true を返す
+            return validatedToken != null;
         }
         catch
         {
+            // トークンが無効であれば false を返す
             return false;
         }
     }
