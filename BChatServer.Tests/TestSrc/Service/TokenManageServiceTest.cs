@@ -3,6 +3,7 @@ using Xunit;
 using Moq;
 using StackExchange.Redis;
 using BChatServer.Src.Service;
+using BChatServer.Tests.Common;
 
 namespace BChatServer.Tests.TestSrc.Service
 {
@@ -12,9 +13,17 @@ namespace BChatServer.Tests.TestSrc.Service
         private readonly Mock<IDatabase> _mockDb;
         private readonly TokenManageService _tokenManageService;
 
+        /// <summary>
+        /// Redisのエントリ
+        /// </summary>
+        public class MockRedisEntry
+        {
+            public RedisValue Value { get; set; }
+            public DateTime? ExpiryTime { get; set; }
+        }
         public TokenManageServiceTest()
         {
-            var mockDataStore = new Dictionary<string, RedisValue>();
+            var mockDataStore = new Dictionary<string, MockRedisEntry>();
 
             // モックの作成
             _mockRedis = new Mock<IConnectionMultiplexer>();
@@ -32,19 +41,34 @@ namespace BChatServer.Tests.TestSrc.Service
                 It.IsAny<CommandFlags>()))
                 .Returns((RedisKey key, RedisValue value, TimeSpan? expiry, bool keepTtl, When when, CommandFlags flags) =>
                 {
-                    mockDataStore[key.ToString()] = value;
+                    MockRedisEntry entry = new MockRedisEntry
+                    {
+                        Value = value,
+                        ExpiryTime = expiry.HasValue ? DateTime.UtcNow.Add(expiry.Value) : (DateTime?)null
+                    };
+
+                    mockDataStore[key.ToString()] = entry;
                     return true;
                 });
 
             _mockDb.Setup(db => db.StringGet(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()))
                 .Returns((RedisKey key, CommandFlags flags) =>
                 {
-                    return mockDataStore.TryGetValue(key.ToString(), out var value) ? value : RedisValue.Null;
+                    if (mockDataStore.TryGetValue(key.ToString(), out var entry))
+                    {
+                        if (entry.ExpiryTime.HasValue && entry.ExpiryTime.Value < DateTime.UtcNow)
+                        {
+                            // 有効期限が過ぎている場合は RedisValue.Null を返す
+                            return RedisValue.Null;
+                        }
+                        return entry.Value;
+                    }
+                    return RedisValue.Null;
                 });
 
             // モックを使ってTokenManageServiceのインスタンスを作成
             _tokenManageService = new TokenManageService(_mockRedis.Object);
-            _tokenManageService.ExpiryDurationSec = 10;
+            _tokenManageService.ExpiryDurationSec = CommonFunc.Token_ExpireTimeForSec;
         }
 
         /// <summary>
@@ -77,6 +101,22 @@ namespace BChatServer.Tests.TestSrc.Service
             var token = _tokenManageService.GetToken(userId);
             // Assert
             Assert.Equal(expectedToken, token);
+        }
+
+        /// <summary>
+        /// トークンを設定し、期限切れになるまで待機し、トークンを取得するテスト
+        /// </summary>
+        [Fact]
+        public void GetToken_ExpiredFortime(){
+            // Arrange
+            var userId = "testUser2";
+            var expectedToken = _tokenManageService.GenerateToken(userId);
+            Thread.Sleep(CommonFunc.Token_ExpireTimeForSec+1);
+            // Act
+            var token = _tokenManageService.GetToken(userId);
+            // Assert
+            Assert.NotEqual(expectedToken, token);
+            Assert.Null(token);
         }
 
         /// <summary>
@@ -137,7 +177,7 @@ namespace BChatServer.Tests.TestSrc.Service
             // Arrange
             var userId = "testUser5";
             var token = _tokenManageService.GenerateToken(userId);
-            Thread.Sleep(11000); // 11秒待機
+            Thread.Sleep(CommonFunc.Token_ExpireTimeForSec+1); // 11秒待機
             // Act
             var isValid = _tokenManageService.ValidateToken(token);
             // Assert
