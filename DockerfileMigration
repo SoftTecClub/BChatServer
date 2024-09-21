@@ -21,4 +21,4 @@ RUN dotnet tool install --global dotnet-ef
 ENV PATH="$PATH:/root/.dotnet/tools"
 
 # マイグレーションを実行
-ENTRYPOINT ["sh", "-c", "dotnet ef migrations add InitialMigration --project /app && dotnet ef database update --project /app && rm -rf /app/Migrations"]
+ENTRYPOINT ["sh", "-c", "dotnet ef database update --project /app"]

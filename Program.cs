@@ -3,7 +3,6 @@ using StackExchange.Redis;
 using BChatServer.Src.DB.Rdb;
 using BChatServer.Src.Service;
 using Serilog;
-using BChatServer.Src.Controllers;
 
 namespace BChatServer{
 
