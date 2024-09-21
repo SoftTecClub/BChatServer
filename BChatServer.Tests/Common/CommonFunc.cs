@@ -34,6 +34,8 @@ public static class CommonFunc{
             return result.ToString();
         }
 
+        public static int Token_ExpireTimeForSec = 5;
+
         /// <summary>
         /// モックRedisを生成するメソッド
         /// </summary>

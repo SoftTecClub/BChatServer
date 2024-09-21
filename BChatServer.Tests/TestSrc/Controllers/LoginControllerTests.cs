@@ -64,7 +64,7 @@ namespace BChatServer.Tests.TestSrc.Controllers;
 
             // TokenManageServiceのモックを設定
             _mockTokenService = new Mock<TokenManageService>(_mockRedis.Object);
-            _mockTokenService.SetupProperty(_ => _.ExpiryDurationSec, 10);
+            _mockTokenService.SetupProperty(_ => _.ExpiryDurationSec, CommonFunc.Token_ExpireTimeForSec);
 
             // テストデータの追加
             _users = UserCommonFunc.CreateUserEntity(10);
