@@ -111,7 +111,7 @@ namespace BChatServer.Tests.TestSrc.Service
             // Arrange
             var userId = "testUser2";
             var expectedToken = _tokenManageService.GenerateToken(userId);
-            Thread.Sleep(CommonFunc.Token_ExpireTimeForSec+1);
+            Thread.Sleep((CommonFunc.Token_ExpireTimeForSec+1)*1000);
             // Act
             var token = _tokenManageService.GetToken(userId);
             // Assert
@@ -177,7 +177,7 @@ namespace BChatServer.Tests.TestSrc.Service
             // Arrange
             var userId = "testUser5";
             var token = _tokenManageService.GenerateToken(userId);
-            Thread.Sleep(CommonFunc.Token_ExpireTimeForSec+1); // 11秒待機
+            Thread.Sleep((CommonFunc.Token_ExpireTimeForSec+1)*1000); 
             // Act
             var isValid = _tokenManageService.ValidateToken(token);
             // Assert
