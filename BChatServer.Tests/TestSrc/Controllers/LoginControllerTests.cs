@@ -71,7 +71,7 @@ namespace BChatServer.Tests.TestSrc.Controllers;
             _users.ForEach(u => 
             {
                 _userPlainPass.Add(u.UserId, u.Password);
-                u.Password = LoginModel.HashPassword(u.Password);
+                u.Password = Src.Common.UserCommonFunc.HashPassword(u.Password);
             });
 
             // DbSet<UserEntity> のモックを作成

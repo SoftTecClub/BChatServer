@@ -1,3 +1,4 @@
+using BChatServer.Src.Common;
 using BChatServer.Src.DB.Rdb;
 using BChatServer.Src.DB.Rdb.Entity;
 using BChatServer.Src.Service;
@@ -51,7 +52,6 @@ namespace BChatServer.Src.Controllers
         public IActionResult Post([FromBody] LoginModel model)
         {         
             UserEntity? user = _context.Users.FirstOrDefault(u => u.UserId == model.Name && u.Password == model.Password);
-            List<UserEntity> users = _context.Users.ToList();
             if(user is null){
                  Log.Information("Login request from {Name} Login Failed", model.Name);
                 return BadRequest("Login failed");
@@ -81,27 +81,10 @@ namespace BChatServer.Src.Controllers
         public string Password
         {
             get => _password;
-            set => _password = HashPassword(value);
+            set => _password = UserCommonFunc.HashPassword(value);
         }
 
-        /// <summary>
-        /// パスワードをSHA256でハッシュ化します。
-        /// </summary>
-        /// <param name="password">ハッシュ化するパスワード</param>
-        /// <returns>ハッシュ化されたパスワード</returns>
-        public static string HashPassword(string password)
-        {
-            using (var sha256 = SHA256.Create())
-            {
-                byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-                StringBuilder builder = new StringBuilder();
-                foreach (var b in bytes)
-                {
-                    builder.Append(b.ToString("x2"));
-                }
-                return builder.ToString();
-            }
-        }
+
     }
 
     public class LoginResponse
