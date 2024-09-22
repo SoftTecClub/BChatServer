@@ -61,8 +61,9 @@ public class UserRegisterController : ControllerBase{
         }
         // ユーザ登録
         UserEntity user = new UserEntity(){
-            UserId = model.Name,
+            UserId = model.UserId,
             Email = model.Email,
+            Name = model.Name,
             Password = model.Password,
             PhoneNumber = model.PhoneNumber
         };
