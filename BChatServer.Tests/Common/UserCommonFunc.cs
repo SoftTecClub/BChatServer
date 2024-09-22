@@ -25,7 +25,8 @@ namespace BChatServer.Tests.Common
                     UserId = CommonFunc.GenerateRandomString(10),
                     Name = CommonFunc.GenerateRandomString(10),
                     Email = CommonFunc.GenerateRandomString(10),
-                    Password = CommonFunc.GenerateRandomString(10)
+                    Password = CommonFunc.GenerateRandomString(10),
+                    PhoneNumber = CommonFunc.GenerateRandomE164PhoneNumber(),
                 };
                 users.Add(user);
             }

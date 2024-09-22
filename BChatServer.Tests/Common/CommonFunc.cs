@@ -1,6 +1,8 @@
 namespace BChatServer.Tests.Common;
 using System.Security.Cryptography;
 using System.Text;
+using BChatServer.Src.DB.Rdb;
+using Microsoft.EntityFrameworkCore;
 using Moq;
 using StackExchange.Redis;
 /// <summary>
@@ -110,5 +112,36 @@ public static class CommonFunc{
             digits[i] = (char)('0' + random.Next(10));
         }
         return new string(digits);
+    }
+
+    private static IConfigurationBuilder builder = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+    private static IConfiguration _configuration = builder.Build();
+    /// <summary>
+    /// DbContextを生成するメソッド
+    /// </summary>
+    /// <returns></returns>
+    public static MyContext GenerateContext()
+    {
+        var dbConnectionString = _configuration.GetConnectionString("DefaultConnection");
+
+        var options = new DbContextOptionsBuilder<MyContext>()
+            .UseNpgsql(dbConnectionString)
+            .Options;
+        return new MyContext(options);
+    }
+
+    /// <summary>
+    /// Redisを生成するメソッド
+    /// </summary>
+    /// <returns></returns>
+    public static IConnectionMultiplexer GenerateRedis(){
+        var redisConnectionString = _configuration.GetSection("Redis")["ConnectionString"];
+        if (string.IsNullOrEmpty(redisConnectionString))
+        {
+            throw new ArgumentNullException(nameof(redisConnectionString), "Redis connection string cannot be null or empty.");
+        }
+        return ConnectionMultiplexer.Connect(redisConnectionString);
     }
 }
