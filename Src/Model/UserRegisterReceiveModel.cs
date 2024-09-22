@@ -1,7 +1,7 @@
 using BChatServer.Src.Common;
 
 namespace BChatServer.Src.Model;
-public class UserRegisterModel
+public class UserRegisterReceiveModel
 {
     /// <summary>
     /// ユーザ名
@@ -10,7 +10,7 @@ public class UserRegisterModel
     /// <summary>
     /// ログインId
     /// </summary>
-    public string userId { get; set; } = String.Empty;
+    public string UserId { get; set; } = String.Empty;
     /// <summary>
     /// メールアドレス
     /// </summary>

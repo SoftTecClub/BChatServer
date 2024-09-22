@@ -42,25 +42,55 @@ public class UserRegisterController : ControllerBase{
 
     /// <summary>
     /// ユーザ登録API
+    /// ヌルチェック、パラメータチェック、ユーザIDの重複チェックを行った後ユーザデータを登録する
     /// </summary>
-    /// <param name="model">登録情報 NameにユーザID、パスワードにハッシュ化したパスワードを入力してください</param>
+    /// <param name="model"></param>
     /// <returns>ステータス200の時トークンを返す</returns>
     [HttpPost]
-    public IActionResult Post([FromBody] UserRegisterModel model){
+    public IActionResult Post([FromBody] UserRegisterReceiveModel model){
+        // パラメータチェック
+        UserRegisterResponseModel response = CheckParameter(model);
+        if(response.NameIsError || response.UserIdIsError || response.EmailIsError || response.PhoneNumberIsError){
+            return BadRequest(response);
+        }
         // ユーザIDが既に登録されているか確認
-        if(_context.Users.FirstOrDefault(u => u.UserId == model.Name) != null){
+        if(_context.Users.FirstOrDefault(u => u.UserId == model.UserId) != null){
             Log.Information("User registration request from {Name} User registration Failed", model.Name);
-            return BadRequest("User registration failed");
+            response.UserIdIsError = true;
+            return BadRequest(response);
         }
         // ユーザ登録
         UserEntity user = new UserEntity(){
             UserId = model.Name,
             Email = model.Email,
             Password = model.Password,
+            PhoneNumber = model.PhoneNumber
         };
         _context.Users.Add(user);
         _context.SaveChanges();
         Log.Information("User registration request from {Name} User registration Success", model.Name);
         return Ok("User registration success");
+    }
+
+    private UserRegisterResponseModel CheckParameter(UserRegisterReceiveModel model){
+        UserRegisterResponseModel response = new UserRegisterResponseModel();
+        if(model.Name == string.Empty){
+            Log.Information("User registration request from {Name} User registration Failed", model.Name);
+            response.NameIsError = true;
+        }
+        if(model.UserId == string.Empty){
+            Log.Information("User registration request from {Name} User registration Failed", model.Name);
+            response.UserIdIsError = true;
+        }
+        if(model.Email == string.Empty){
+            Log.Information("User registration request from {Name} User registration Failed", model.Name);
+            response.EmailIsError = true;
+        }
+        if(model.PhoneNumber == string.Empty){
+            Log.Information("User registration request from {Name} User registration Failed", model.Name);
+            response.PhoneNumberIsError = true;
+        }
+
+        return response;
     }
 }

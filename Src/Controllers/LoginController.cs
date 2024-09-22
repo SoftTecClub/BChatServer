@@ -5,8 +5,6 @@ using BChatServer.Src.Service;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using StackExchange.Redis;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace BChatServer.Src.Controllers
 {

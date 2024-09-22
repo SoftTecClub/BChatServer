@@ -36,5 +36,10 @@ namespace BChatServer.Src.DB.Rdb.Entity
         /// 電話番号
         /// </summary>
         public string PhoneNumber { get; set; } = String.Empty;
+
+        /// <summary>
+        /// 作成日時
+        /// </summary>
+        public DateTime CreateDate { get; set; } = DateTime.Now;
     }
 }
