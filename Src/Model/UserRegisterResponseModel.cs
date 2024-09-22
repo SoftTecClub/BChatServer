@@ -24,5 +24,10 @@ namespace BChatServer.Src.Model
         /// 電話番号
         /// </summary>
         public bool PhoneNumberIsError { get; set; } = false;
+
+        /// <summary>
+        /// パスワード
+        /// </summary>
+        public bool PasswordIsError { get; set; } = false;
     }
 }

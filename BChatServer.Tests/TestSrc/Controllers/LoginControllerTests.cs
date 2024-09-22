@@ -10,7 +10,9 @@ using BChatServer.Tests.Common;
 using BChatServer.Src.Service;
 
 namespace BChatServer.Tests.TestSrc.Controllers;
-
+    /// <summary>
+    /// ログインAPIのテストクラス
+    /// </summary>
     public class LoginControllerTests
     {
         private readonly Mock<MyContext> _mockContext;
@@ -26,7 +28,9 @@ namespace BChatServer.Tests.TestSrc.Controllers;
         /// </summary>
         private readonly Dictionary<string, string> _userPlainPass= new Dictionary<string, string>();
         private readonly List<UserEntity> _users = new List<UserEntity>();  
-
+        /// <summary>
+        /// ログインAPIのテストコンストラクタ
+        /// </summary>
         public LoginControllerTests()
         {
             //モックデータベースに対しての操作を行うためのデータストア

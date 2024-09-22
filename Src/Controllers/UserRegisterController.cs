@@ -32,6 +32,12 @@ public class UserRegisterController : ControllerBase{
     /// トークンマネージャ
     /// </summary>
     private readonly TokenManageService _tokenManageService;
+    /// <summary>
+    /// ユーザ作成API コンストラクタ
+    /// </summary>
+    /// <param name="context"></param>
+    /// <param name="redis"></param>
+    /// <param name="tokenManageService"></param>
     public UserRegisterController(MyContext context, IConnectionMultiplexer redis, TokenManageService tokenManageService){
         _context = context;
         _redis = redis;
@@ -48,7 +54,7 @@ public class UserRegisterController : ControllerBase{
     public IActionResult Post([FromBody] UserRegisterReceiveModel model){
         // パラメータチェック
         UserRegisterResponseModel response = CheckParameter(model);
-        if(response.NameIsError || response.UserIdIsError || response.EmailIsError || response.PhoneNumberIsError){
+        if(response.NameIsError || response.UserIdIsError || response.EmailIsError || response.PhoneNumberIsError || response.PasswordIsError){ 
             return BadRequest(response);
         }
         // ユーザIDが既に登録されているか確認
@@ -71,25 +77,48 @@ public class UserRegisterController : ControllerBase{
         return Ok("User registration success");
     }
 
+    /// <summary>
+    /// チェック処理
+    /// </summary>
+    /// <param name="model"></param>
+    /// <returns></returns>
     private UserRegisterResponseModel CheckParameter(UserRegisterReceiveModel model){
         UserRegisterResponseModel response = new UserRegisterResponseModel();
-        if(model.Name == string.Empty){
+        if(string.IsNullOrEmpty(model.Name) || string.IsNullOrWhiteSpace(model.Name)){
             Log.Information("User registration request from {Name} User registration Failed", model.Name);
             response.NameIsError = true;
         }
-        if(model.UserId == string.Empty){
+        if(string.IsNullOrEmpty(model.UserId) || string.IsNullOrWhiteSpace(model.UserId)){
             Log.Information("User registration request from {Name} User registration Failed", model.Name);
             response.UserIdIsError = true;
+        }else{
+            if(!UserCommonFunc.IsValidUserId(model.UserId)){
+                Log.Information("User registration request from {Name} User registration Failed", model.Name);
+                response.UserIdIsError = true;
+            }
         }
-        if(model.Email == string.Empty){
+        if(string.IsNullOrEmpty(model.Email) || string.IsNullOrWhiteSpace(model.Email)){
             Log.Information("User registration request from {Name} User registration Failed", model.Name);
             response.EmailIsError = true;
+        }else{
+            if(!UserCommonFunc.IsValidEmail(model.Email)){
+                Log.Information("User registration request from {Name} User registration Failed", model.Name);
+                response.EmailIsError = true;
+            }
         }
-        if(model.PhoneNumber == string.Empty){
+        if(string.IsNullOrEmpty(model.PhoneNumber) || string.IsNullOrWhiteSpace(model.PhoneNumber)){
             Log.Information("User registration request from {Name} User registration Failed", model.Name);
             response.PhoneNumberIsError = true;
+        }else{
+            if(!UserCommonFunc.IsValidPhoneNumber(model.PhoneNumber)){
+                Log.Information("User registration request from {Name} User registration Failed", model.Name);
+                response.PhoneNumberIsError = true;
+            }
         }
-
+        if(string.IsNullOrEmpty(model.Password) || string.IsNullOrWhiteSpace(model.Password)){
+            Log.Information("User registration request from {Name} User registration Failed", model.Name);
+            response.PasswordIsError = true;
+        }
         return response;
     }
 }

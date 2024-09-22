@@ -33,6 +33,13 @@ namespace BChatServer.Src.Controllers
         /// トークンマネージャ
         /// </summary>
         private readonly TokenManageService _tokenManageService;
+
+        /// <summary>
+        /// ログインAPI コンストラクタ
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="redis"></param>
+        /// <param name="tokenManageService"></param>
         public LoginController(MyContext context, IConnectionMultiplexer redis, TokenManageService tokenManageService)
         {
             _context = context;
@@ -85,8 +92,14 @@ namespace BChatServer.Src.Controllers
 
     }
 
+    /// <summary>
+    /// ログイン時のレスポンスモデル
+    /// </summary>
     public class LoginResponse
     {
+        /// <summary>
+        /// トークン
+        /// </summary>
         public string Token { get; set; } = string.Empty;
     }
 }

@@ -3,12 +3,21 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BChatServer.Src.DB.Rdb
 {
+    /// <summary>
+    /// PostgreSqlのコンテキスト
+    /// </summary>
     public class MyContext : DbContext
     {
-        // テスト用コンストラクタ
+        /// <summary>
+        /// テスト用コンストラクタ
+        /// </summary>
         public MyContext() : base()
         {
         }
+        /// <summary>
+        /// コンストラクタ
+        /// </summary>
+        /// <param name="options"></param>
         public MyContext(DbContextOptions<MyContext> options) : base(options)
         {
         }
@@ -17,7 +26,14 @@ namespace BChatServer.Src.DB.Rdb
         // For example:
         // public DbSet<User> Users { get; set; }
         // public DbSet<Chat> Chats { get; set; }
+        /// <summary>
+        /// ユーザエンティティ
+        /// </summary>
         public virtual DbSet<UserEntity> Users { get; set; }
+        /// <summary>
+        /// 各種制約の設定
+        /// </summary>
+        /// <param name="modelBuilder"></param>
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // テンプレート

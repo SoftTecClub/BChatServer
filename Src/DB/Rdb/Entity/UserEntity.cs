@@ -40,6 +40,6 @@ namespace BChatServer.Src.DB.Rdb.Entity
         /// <summary>
         /// 作成日時
         /// </summary>
-        public DateTime CreateDate { get; set; } = DateTime.Now;
+        public DateTime CreateDate { get; set; } = DateTime.UtcNow;
     }
 }

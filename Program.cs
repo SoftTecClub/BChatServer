@@ -3,10 +3,19 @@ using StackExchange.Redis;
 using BChatServer.Src.DB.Rdb;
 using BChatServer.Src.Service;
 using Serilog;
+using System.Reflection;
+
 
 namespace BChatServer{
-
+    /// <summary>
+    /// アプリケーションのエントリーポイント
+    /// </summary>
     public static class Program{
+        /// <summary>
+        /// アプリケーションの実行メソッド
+        /// </summary>
+        /// <param name="args"></param>
+        /// <exception cref="ArgumentNullException"></exception>
         public static void Main(string[] args){
             var builder = WebApplication.CreateBuilder(args);
             // ロガーの設定はアプリケーションの開始時に一度だけ行う
@@ -16,7 +25,14 @@ namespace BChatServer{
             // Add services to the container.
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+                    builder.Services.AddSwaggerGen(options =>
+                    {
+                        // XMLコメントファイルのパスを取得
+                        var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                        var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                        options.IncludeXmlComments(xmlPath);
+
+                    });
 
             // Redisの接続設定
             var redisConnectionString = builder.Configuration.GetSection("Redis")["ConnectionString"];
