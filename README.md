@@ -10,28 +10,41 @@ BChatServerは、クライアントとのリアルタイムなチャット通信
 
 以下の手順に従って、BChatServerをインストールしてください。
 
-1. リポジトリをクローンします。
+### 1. リポジトリをクローンします。
 
     ```
     git clone https://github.com/SoftTecClub/BChatServer.git
     ```
 
-2. BChatServerディレクトリに移動します。
+### 2. BChatServerディレクトリに移動します。
 
     ```
     cd BChatServer
     ```
 
-3. 実行に必要な環境を用意
+### 3. 実行に必要な環境を用意
 
  - DOTNET 8
  - Docker
 
-4. サーバーを起動します。
+
+### 4. マイグレーション　※初回又はDBに更新があった場合
+
+    ```
+    docker compose -f "docker-compose.migration.yml" up -d --build 
+    docker compose -f "docker-compose.migration.yml" down 
+    ```
+### 5. ネットワークの設定
+
+    bchatdb、bchatredisにアクセスがあったときループバックアドレスにルーティングされるように設定してください
+
+### 6. サーバーを起動します。
 
     ```
     docker compose -f "docker-compose.yml" up -d --build  
     ```
+
+
 
 
 ## 貢献

@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  migration:
+    build:
+      context: .
+      dockerfile: DockerfileMigration
+    depends_on:
+      - bchatdb
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=bchatdb;Port=5432;Database=bchat;User Id=myuser;Password=mypassword;
+    volumes:
+      - .:/app
+
+  bchatdb:
+    image: postgres:latest
+    container_name: master_db
+    restart: always
+    environment:
+      - POSTGRES_USER=myuser
+      - POSTGRES_PASSWORD=mypassword
+      - POSTGRES_DB=bchat
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  pgdata:

@@ -1,0 +1,24 @@
+# DockerfileMigration
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /app
+
+# プロジェクトファイルをコピーして復元
+COPY *.csproj ./
+RUN dotnet restore
+
+# 残りのファイルをコピーしてビルド
+COPY . ./
+RUN dotnet build -c Release -o /app/build
+
+# マイグレーションを実行
+FROM build AS publish
+WORKDIR /app
+
+# 必要なツールのインストール
+RUN dotnet tool install --global dotnet-ef
+
+# 環境変数の設定
+ENV PATH="$PATH:/root/.dotnet/tools"
+
+# マイグレーションを実行
+ENTRYPOINT ["sh", "-c", "dotnet ef database update --project /app"]

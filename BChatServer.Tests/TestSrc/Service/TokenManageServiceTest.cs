@@ -7,6 +7,9 @@ using BChatServer.Tests.Common;
 
 namespace BChatServer.Tests.TestSrc.Service
 {
+    /// <summary>
+    /// トークン管理サービスのテストクラス
+    /// </summary>
     public class TokenManageServiceTest
     {
         private readonly Mock<IConnectionMultiplexer> _mockRedis;
@@ -18,9 +21,18 @@ namespace BChatServer.Tests.TestSrc.Service
         /// </summary>
         public class MockRedisEntry
         {
+            /// <summary>
+            /// Redisの値
+            /// </summary>
             public RedisValue Value { get; set; }
+            /// <summary>
+            /// 有効期限
+            /// </summary>
             public DateTime? ExpiryTime { get; set; }
         }
+        /// <summary>
+        /// トークン管理サービスのテストコンストラクタ
+        /// </summary>
         public TokenManageServiceTest()
         {
             var mockDataStore = new Dictionary<string, MockRedisEntry>();

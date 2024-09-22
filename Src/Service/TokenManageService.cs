@@ -28,7 +28,10 @@ public class TokenManageService
     /// </summary>
     public virtual int ExpiryDurationSec { get; set; } = 60*60;
     
-
+    /// <summary>
+    /// トークン管理サービスのコンストラクタ
+    /// </summary>
+    /// <param name="redis"></param>
     public TokenManageService(IConnectionMultiplexer redis)
     {
         _redis = redis;

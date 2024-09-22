@@ -1,11 +1,10 @@
+using BChatServer.Src.Common;
 using BChatServer.Src.DB.Rdb;
 using BChatServer.Src.DB.Rdb.Entity;
 using BChatServer.Src.Service;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using StackExchange.Redis;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace BChatServer.Src.Controllers
 {
@@ -34,6 +33,13 @@ namespace BChatServer.Src.Controllers
         /// トークンマネージャ
         /// </summary>
         private readonly TokenManageService _tokenManageService;
+
+        /// <summary>
+        /// ログインAPI コンストラクタ
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="redis"></param>
+        /// <param name="tokenManageService"></param>
         public LoginController(MyContext context, IConnectionMultiplexer redis, TokenManageService tokenManageService)
         {
             _context = context;
@@ -51,7 +57,6 @@ namespace BChatServer.Src.Controllers
         public IActionResult Post([FromBody] LoginModel model)
         {         
             UserEntity? user = _context.Users.FirstOrDefault(u => u.UserId == model.Name && u.Password == model.Password);
-            List<UserEntity> users = _context.Users.ToList();
             if(user is null){
                  Log.Information("Login request from {Name} Login Failed", model.Name);
                 return BadRequest("Login failed");
@@ -81,31 +86,20 @@ namespace BChatServer.Src.Controllers
         public string Password
         {
             get => _password;
-            set => _password = HashPassword(value);
+            set => _password = UserCommonFunc.HashPassword(value);
         }
 
-        /// <summary>
-        /// パスワードをSHA256でハッシュ化します。
-        /// </summary>
-        /// <param name="password">ハッシュ化するパスワード</param>
-        /// <returns>ハッシュ化されたパスワード</returns>
-        public static string HashPassword(string password)
-        {
-            using (var sha256 = SHA256.Create())
-            {
-                byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-                StringBuilder builder = new StringBuilder();
-                foreach (var b in bytes)
-                {
-                    builder.Append(b.ToString("x2"));
-                }
-                return builder.ToString();
-            }
-        }
+
     }
 
+    /// <summary>
+    /// ログイン時のレスポンスモデル
+    /// </summary>
     public class LoginResponse
     {
+        /// <summary>
+        /// トークン
+        /// </summary>
         public string Token { get; set; } = string.Empty;
     }
 }

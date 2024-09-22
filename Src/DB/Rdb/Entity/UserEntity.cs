@@ -31,5 +31,15 @@ namespace BChatServer.Src.DB.Rdb.Entity
         /// パスワード、サーバ側ではハッシュ化されているものが保存されている
         /// </summary>
         public string Password { get; set; } = String.Empty;
+
+        /// <summary>
+        /// 電話番号
+        /// </summary>
+        public string PhoneNumber { get; set; } = String.Empty;
+
+        /// <summary>
+        /// 作成日時
+        /// </summary>
+        public DateTime CreateDate { get; set; } = DateTime.UtcNow;
     }
 }
