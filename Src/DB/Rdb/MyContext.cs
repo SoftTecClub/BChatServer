@@ -60,9 +60,10 @@ namespace BChatServer.Src.DB.Rdb
             modelBuilder.Entity<ChatEntity>().HasKey(c => new {c.ChatId,c.UserId});
             modelBuilder.Entity<ChatEntity>().Property(c => c.ChatId).ValueGeneratedOnAdd();
             modelBuilder.Entity<ChatEntity>()
-                .HasOne<UserEntity>()
-                .WithMany()
-                .HasForeignKey(c => c.UserId);
+                .HasOne<UserEntity>(c => c.User)
+                .WithMany(u => u.Chats)
+                .HasForeignKey(c => c.UserId)
+                .HasPrincipalKey(u => u.UserId);
         }
     }
 }

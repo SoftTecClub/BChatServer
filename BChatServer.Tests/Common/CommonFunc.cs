@@ -142,6 +142,23 @@ public static class CommonFunc{
         {
             throw new ArgumentNullException(nameof(redisConnectionString), "Redis connection string cannot be null or empty.");
         }
+        redisConnectionString += ",abortConnect=false";
         return ConnectionMultiplexer.Connect(redisConnectionString);
+    }
+
+    private static readonly Random _random = new Random();
+    private static readonly string[] _domains = { "example", "test", "demo" };
+    private static readonly string[] _tlds = { "com", "net", "org" };
+        /// <summary>
+    /// ランダムなメールアドレスを生成するメソッド
+    /// </summary>
+    /// <returns>ランダムなメールアドレス</returns>
+    public static string GenerateRandomEmail()
+    {
+        string userName = GenerateRandomString(8);
+        string domain = _domains[_random.Next(_domains.Length)];
+        string tld = _tlds[_random.Next(_tlds.Length)];
+
+        return $"{userName}@{domain}.{tld}";
     }
 }

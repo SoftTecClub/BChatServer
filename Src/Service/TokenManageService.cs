@@ -150,6 +150,7 @@ public class TokenManageService
     /// <returns></returns>
     public string? GetUserIdFromToken(string token)
     {
+        try{
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.ASCII.GetBytes(SecretKey);
         var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
@@ -163,5 +164,8 @@ public class TokenManageService
 
         var userIdClaim = principal.FindFirst(ClaimTypes.NameIdentifier);
         return userIdClaim?.Value;
+        }catch{
+            return null;
+        }
     }
 }

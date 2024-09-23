@@ -13,11 +13,16 @@ namespace BChatServer.Src.DB.Rdb.Entity
         /// <summary>
         /// ユーザID
         /// </summary>
-        public string UserId { get; set; } = String.Empty;
+        public UserEntity? User { get; set; } 
 
         /// <summary>
         /// 作成日時
         /// </summary>
         public DateTime CreateDate { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// ユーザIdの設定
+        /// </summary>
+        public string UserId { get; set; } = String.Empty;
     }
 }

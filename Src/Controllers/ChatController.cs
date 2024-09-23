@@ -46,6 +46,10 @@ public class ChatController : ControllerBase{
 
     /// <summary>
     /// チャット作成API
+    /// トークンが不正な場合、401を返す
+    /// ユーザが存在しない場合、404を返す
+    ///  既にチャットが存在する場合、409を返す
+    /// その他のエラーの場合、500を返す
     /// </summary>
     /// <param name="model"></param>
     /// <returns>ステータス200の時トークンを返す</returns>
@@ -70,20 +74,29 @@ public class ChatController : ControllerBase{
                 return Unauthorized();
             }
 
-            UserEntity? user = _context.Users.Where(u => u.UserId == model.ToUserId).FirstOrDefault();
-            if(user == null){
+            UserEntity? toUser = _context.Users.Where(u => u.UserId == model.ToUserId).FirstOrDefault();
+            UserEntity? myUser = _context.Users.Where(u => u.UserId == myUserId).FirstOrDefault();
+            if(toUser == null || myUser == null){
                 return NotFound();
             }
+            List<ChatEntity> chatList = [.. toUser.Chats, .. myUser.Chats];
             
+            var existingChatGroup = chatList
+                .GroupBy(c => c.ChatId)
+                .FirstOrDefault(g => g.Any(c => c.UserId == myUserId) && g.Any(c => c.UserId == model.ToUserId));
+            if (existingChatGroup != null) {
+                 // 同じChatIdグループが存在する場合の処理
+                return Conflict();
+            }
             string chatId = Guid.NewGuid().ToString();
             List<ChatEntity> chat = new List<ChatEntity> {
                 new ChatEntity {
                     ChatId = chatId,
-                    UserId = model.ToUserId,
+                    UserId = model.ToUserId
                 },
                 new ChatEntity {
-                    ChatId = myUserId,
-                    UserId = model.ToUserId,
+                    ChatId = chatId,
+                    UserId = myUserId
                 },
             };
             
@@ -148,6 +161,8 @@ public class ChatController : ControllerBase{
     /// </summary>
     /// <param name="model"></param>
     /// <returns></returns>
+    [HttpPost]
+    [Route("getChat")]
     public IActionResult GetChat([FromBody] ChatGetReceiveModel model){
         try{
             string userId ;
