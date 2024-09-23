@@ -101,8 +101,14 @@ namespace BChatServer.Tests.Controllers
             Token = TokenData[_users[1].UserId]});
             var fourthResult = _controller.CreateChatPost(model);
             
-            if(firstResult is OkResult okResult){
+            if(firstResult is OkObjectResult okResult){
                 Assert.Equal(200, okResult.StatusCode);
+                if(okResult.Value is ChatCreateResponseModel responseModel){
+                    Assert.NotNull(responseModel.ChatId);
+                }else{
+                    Assert.Fail("Failed to GenerateChatId chat");
+                    return;
+                }
             }else{
                 Assert.Fail("Failed to create chat");
                 return;
@@ -126,6 +132,54 @@ namespace BChatServer.Tests.Controllers
                 Assert.Fail("Failed to Conflict");
             } 
 
+        }
+
+        /// <summary>
+        /// 作成したチャット一覧を取得するAPIのテスト
+        /// </summary>
+        [Fact]
+        public void ChatGetTest()
+        {
+            ChatCreateReceiveModel createModel1 = new ChatCreateReceiveModel
+            {
+                ToUserId = _users[3].UserId,
+                Token = TokenData[_users[1].UserId]
+            };
+            ChatCreateReceiveModel createModel2 = new ChatCreateReceiveModel
+            {
+                ToUserId = _users[4].UserId,
+                Token = TokenData[_users[1].UserId]
+            };
+            _controller.CreateChatPost(createModel1);
+            _controller.CreateChatPost(createModel2);
+        
+            // Given
+            ChatGetListReceiveModel model = new ChatGetListReceiveModel
+            {
+                Token = TokenData[_users[1].UserId]
+            };
+
+            var response = _controller.GetChatList(model);
+            
+            if(response is OkObjectResult okResult){
+                Assert.Equal(200, okResult.StatusCode);
+                if(okResult.Value is ChatListResponseModel responseModel){
+                    Assert.Equal(2, responseModel.chatIds.Count);
+                }else{
+                    Assert.Fail("Failed to GetChatList");
+                }
+            }else{
+                Assert.Fail("Failed to GetChatList");
+            }
+
+            var response2 = _controller.GetChatList(new ChatGetListReceiveModel{
+                Token = "InvalidToken"
+            });
+            if(response2 is UnauthorizedResult unauthorizedResult){
+                Assert.Equal(401, (response2 as UnauthorizedResult)?.StatusCode);
+            }else{
+                Assert.Fail("Failed to Unauthorized");
+            }
         }
 
         /// <summary>

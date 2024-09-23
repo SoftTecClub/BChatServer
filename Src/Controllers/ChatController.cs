@@ -46,10 +46,10 @@ public class ChatController : ControllerBase{
 
     /// <summary>
     /// チャット作成API
-    /// トークンが不正な場合、401を返す
-    /// ユーザが存在しない場合、404を返す
-    ///  既にチャットが存在する場合、409を返す
-    /// その他のエラーの場合、500を返す
+    /// トークンが不正な場合401を返す。
+    /// ユーザが存在しない場合404を返す。
+    ///  既にチャットが存在する場合409を返す。
+    /// その他のエラーの場合500を返す。
     /// </summary>
     /// <param name="model"></param>
     /// <returns>ステータス200の時トークンを返す</returns>
@@ -102,18 +102,24 @@ public class ChatController : ControllerBase{
             
             _context.Chats.AddRange(chat);
             _context.SaveChanges();
-
+            ChatCreateResponseModel response = new ChatCreateResponseModel
+            {
+                ChatId = chatId
+            };
+            return Ok(response);
         }catch(Exception e){
             Log.Error("Create Chat Error", model.ToUserId);
             Log.Error(e.Message);
             return StatusCode(500, e.Message);
         }
-        return Ok();
+        
     }
     
     /// <summary>
     /// チャット送信API
-    /// チャットIDが存在しないとき、404を返す
+    /// チャットIDが存在しないとき404を返す。
+    /// トークンが不正な場合401を返す。
+    /// その他のエラーの場合500を返す。
     /// </summary>
     /// <param name="model"></param>
     /// <returns></returns>
@@ -190,6 +196,43 @@ public class ChatController : ControllerBase{
         return Ok(chatData);
         }catch(Exception e){
             Log.Error("Get Chat Error", model.ChatId);
+            Log.Error(e.Message);
+            return StatusCode(500, e.Message);
+        }
+    }
+
+    /// <summary>
+    /// チャットリスト取得API
+    /// トークンが存在しないとき404を返す。
+    /// トークンが不正な場合401を返す。
+    /// その他のエラーの場合500を返す。
+    /// </summary>
+    /// <param name="model"></param>
+    /// <returns></returns>
+    public IActionResult GetChatList([FromBody] ChatGetListReceiveModel model){
+        try{
+            string userId ;
+            // パラメータチェック
+            if (string.IsNullOrEmpty(model.Token)){
+                return BadRequest();
+            }else{
+                userId = _tokenManageService.GetUserIdFromToken(model.Token)??"";
+                if (userId == null || userId == string.Empty)
+                {
+                    return Unauthorized();
+                }
+            }
+
+            if(!_tokenManageService.ValidateToken(model.Token)){
+                return Unauthorized();
+            }
+            List<ChatEntity> chatList = _context.Chats.Where(c => c.UserId == userId).ToList();
+            ChatListResponseModel chatListResponse = new ChatListResponseModel();
+            chatList.ForEach(c => {
+                chatListResponse.chatIds.Add(c.ChatId);
+            });
+            return Ok(chatListResponse);
+        }catch(Exception e){
             Log.Error(e.Message);
             return StatusCode(500, e.Message);
         }
