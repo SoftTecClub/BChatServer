@@ -1,4 +1,4 @@
-using System.Linq.Expressions;
+using BChatServer.Src.Common;
 using BChatServer.Src.DB.Rdb;
 using BChatServer.Src.DB.Rdb.Entity;
 using BChatServer.Src.DB.Redis;
@@ -148,10 +148,10 @@ public class ChatController : ControllerBase{
             }
         
         var db = _redis.GetDatabase((int)RedisDbTypeEnum.Chat);
-        db.HashSet(model.ChatId, new HashEntry[] {
+        db.HashSet(model.ChatId+":"+SecurityCommonFunc.GenerateRandomString(5), new HashEntry[] {
             new HashEntry("UserId", userId),
             new HashEntry("Message", model.Message),
-            new HashEntry("SendDate", DateTime.UtcNow.ToString())
+            new HashEntry("SendDate", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.ff"))
         });
 
         }catch(Exception e){
@@ -192,8 +192,31 @@ public class ChatController : ControllerBase{
             }
         
         var db = _redis.GetDatabase((int)RedisDbTypeEnum.Chat);
+        var server = _redis.GetServer(_redis.GetEndPoints().First());
+
+        // プレフィックスを持つ全てのキーを取得
+        var keys = new List<RedisKey>();
+        var cursor = 0L;
+        do
+        {
+            var result = server.Keys((int)cursor, pattern: model.ChatId + ":*", pageSize: 1000).ToArray();
+            keys.AddRange(result);
+            cursor = result.Length == 0 ? 0 : cursor + 1;
+            Console.WriteLine($"Cursor: {cursor}, Keys: {string.Join(", ", result)}");
+        } while (cursor != 0);
         var chatData = db.HashGetAll(model.ChatId);
-        return Ok(chatData);
+        var response = new ChatSendResponseModel();
+        foreach(var data in chatData){
+            ChatSendResponse chatSendResponse = new ChatSendResponse
+            {
+                ChatId = model.ChatId,
+                UserId = data.Name == "UserId" ? (data.Value.HasValue ? (string?)data.Value ?? "" : "") : "",
+                Message = data.Name == "Message" ? (data.Value.HasValue ? (string?)data.Value ?? "" : "") : "",
+                CreatedAt = data.Name == "SendDate" && data.Value.HasValue && !string.IsNullOrEmpty(data.Value) ? DateTime.Parse(data.Value.ToString()) : DateTime.MinValue
+            };
+            response.ChatSendResponses.Add(chatSendResponse);
+        }
+        return Ok(response);
         }catch(Exception e){
             Log.Error("Get Chat Error", model.ChatId);
             Log.Error(e.Message);

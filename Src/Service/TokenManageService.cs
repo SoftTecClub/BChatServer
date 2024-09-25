@@ -80,7 +80,7 @@ public class TokenManageService
         bool isSet = db.StringSet(userId, tokenString, TimeSpan.FromSeconds(ExpiryDurationSec));
         if (!isSet)
         {
-            throw new Exception("トークンの保存に失敗しました。");
+            throw new Exception("Failed to set token");
             
         }
 

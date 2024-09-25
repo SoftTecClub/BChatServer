@@ -136,6 +136,9 @@ namespace BChatServer.Tests.Controllers
 
         /// <summary>
         /// 作成したチャット一覧を取得するAPIのテスト
+        /// チェック内容
+        /// 1. チャット一覧を取得するAPIが正常に動作するか
+        /// 2. トークンが不正な場合、401を返すか
         /// </summary>
         [Fact]
         public void ChatGetTest()
@@ -179,6 +182,62 @@ namespace BChatServer.Tests.Controllers
                 Assert.Equal(401, (response2 as UnauthorizedResult)?.StatusCode);
             }else{
                 Assert.Fail("Failed to Unauthorized");
+            }
+        }
+
+        /// <summary>
+        /// チャット内容を取得するAPIのテスト
+        /// </summary>
+        [Fact]
+        public void GetChatTest(){
+            ChatCreateReceiveModel createModel1 = new ChatCreateReceiveModel
+            {
+                ToUserId = _users[4].UserId,
+                Token = TokenData[_users[5].UserId]
+            };
+            var response =_controller.CreateChatPost(createModel1);
+            string chatId;
+            if(response is OkObjectResult okResult){
+                if(okResult.Value is ChatCreateResponseModel responseModel){
+                    ChatSendReceiveModel model = new ChatSendReceiveModel
+                    {
+                        ChatId = responseModel.ChatId,
+                        Token = TokenData[_users[5].UserId],
+                        Message = "Hello"
+                    };
+                    chatId = responseModel.ChatId;
+                    var chatResponse = _controller.SendChatPost(model);
+                    if(chatResponse is OkResult okResult1){
+                        Assert.Equal(200,  okResult.StatusCode);
+                    }else{
+                        Assert.Fail("Failed to SendChat");
+                        return;
+                    }
+                }else{
+                    Assert.Fail("Failed to CreateChat");
+                    return;
+                }
+                
+            }else{
+                Assert.Fail("Failed to CreateChat");
+                return;
+            }
+
+            ChatGetReceiveModel getChatModel = new ChatGetReceiveModel
+            {
+                ChatId = chatId,
+                Token = TokenData[_users[5].UserId]
+            };
+
+            var getChatResponse = _controller.GetChat(getChatModel);
+            if(getChatResponse is OkObjectResult okChatResult){
+                if(okChatResult.Value is ChatSendResponseModel responseModel){
+                    Assert.Equal("Hello", responseModel.ChatSendResponses[0].Message);
+                }else{
+                    Assert.Fail("Failed to GetChat");
+                }
+            }else{
+                Assert.Fail("Failed to GetChat");
             }
         }
 
