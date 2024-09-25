@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace BChatServer.Src.Common;
@@ -39,5 +41,26 @@ public static class SecurityCommonFunc{
         sanitized = Regex.Replace(sanitized, @"[\x00-\x1F\x7F]", string.Empty);
 
         return sanitized;
+    }
+    private static readonly char[] chars =
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_@".ToCharArray();
+
+    /// <summary>
+    /// 指定した長さのランダムな文字列を生成します。
+    /// </summary>
+    /// <param name="length"></param>
+    /// <returns></returns>
+    public static string GenerateRandomString(int length)
+    {
+        byte[] data = new byte[length];
+        RandomNumberGenerator.Fill(data);
+
+        StringBuilder result = new StringBuilder(length);
+        foreach (byte b in data)
+        {
+            result.Append(chars[b % chars.Length]);
+        }
+
+        return result.ToString();
     }
 }

@@ -31,6 +31,10 @@ namespace BChatServer.Src.DB.Rdb
         /// </summary>
         public virtual DbSet<UserEntity> Users { get; set; }
         /// <summary>
+        /// チャットエンティティ
+        /// </summary>
+        public virtual DbSet<ChatEntity> Chats { get; set; }
+        /// <summary>
         /// 各種制約の設定
         /// </summary>
         /// <param name="modelBuilder"></param>
@@ -51,6 +55,15 @@ namespace BChatServer.Src.DB.Rdb
             modelBuilder.Entity<UserEntity>()
                 .Property(u => u.Id)
                 .ValueGeneratedOnAdd();
+
+            // チャットエンティティ
+            modelBuilder.Entity<ChatEntity>().HasKey(c => new {c.ChatId,c.UserId});
+            modelBuilder.Entity<ChatEntity>().Property(c => c.ChatId).ValueGeneratedOnAdd();
+            modelBuilder.Entity<ChatEntity>()
+                .HasOne<UserEntity>(c => c.User)
+                .WithMany(u => u.Chats)
+                .HasForeignKey(c => c.UserId)
+                .HasPrincipalKey(u => u.UserId);
         }
     }
 }

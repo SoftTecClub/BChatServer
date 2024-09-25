@@ -16,3 +16,5 @@ https://github.com/orgs/SoftTecClub/projects/4
    ```sh
    git clone https://github.com/SoftTecClub/BChatServer.git
    ```
+4. **ブランチの発行**
+ - 新しいブランチを発行するときは、これから対応するチケットの番号をブランチ名にわかるように設定してください

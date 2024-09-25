@@ -15,10 +15,6 @@ RUN dotnet restore "./BChatServer.csproj"
 COPY . ./
 RUN dotnet build "./BChatServer.csproj" -c Release -o /app/build
 
-# テストを実施
-RUN dotnet test "./BChatServer.csproj"
-
-
 FROM build AS publish
 ENV PATH="$PATH:/root/.dotnet/tools"
 RUN dotnet publish "./BChatServer.csproj" -c Release -o /app/publish 

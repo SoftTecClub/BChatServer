@@ -41,5 +41,10 @@ namespace BChatServer.Src.DB.Rdb.Entity
         /// 作成日時
         /// </summary>
         public DateTime CreateDate { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// チャット一覧
+        /// </summary>
+        public List<ChatEntity> Chats { get; set; } = new List<ChatEntity>();
     }
 }

@@ -22,10 +22,11 @@ namespace BChatServer.Tests.Common
             {
                 var user = new UserEntity
                 {
-                    UserId = CommonFunc.GenerateRandomString(10),
-                    Name = CommonFunc.GenerateRandomString(10),
-                    Email = CommonFunc.GenerateRandomString(10),
-                    Password = CommonFunc.GenerateRandomString(10)
+                    UserId = "userId"+CommonFunc.GenerateRandomString(5),
+                    Name = "name"+CommonFunc.GenerateRandomString(5),
+                    Email = CommonFunc.GenerateRandomEmail(),
+                    Password = CommonFunc.GenerateRandomString(10),
+                    PhoneNumber = CommonFunc.GenerateRandomE164PhoneNumber(),
                 };
                 users.Add(user);
             }
