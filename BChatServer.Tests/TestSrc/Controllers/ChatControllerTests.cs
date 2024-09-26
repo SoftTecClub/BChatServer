@@ -16,7 +16,7 @@ namespace BChatServer.Tests.Controllers
     public class ChatControllerTests: IDisposable
     {
         private readonly MyContext _context;
-        private readonly IConnectionMultiplexer _redis;
+        private readonly RedisService _redis;
         private readonly TokenManageService _tokenService;
         private readonly ChatController _controller;
 
@@ -258,14 +258,14 @@ namespace BChatServer.Tests.Controllers
             }
             _context.SaveChanges();
             // Redisのキーを個別に削除
-            var server = _redis.GetServer(_redis.GetEndPoints().First());
-            var keys = server.Keys();
-            foreach (var key in keys)
-            {
-                _redis.GetDatabase().KeyDelete(key);
-            }
-            _context.Dispose();
-            _redis.Dispose();
+            // var server = _redis.GetServer(_redis.GetEndPoints().First());
+            // var keys = server.Keys();
+            // foreach (var key in keys)
+            // {
+            //     _redis.GetDatabase().KeyDelete(key);
+            // }
+            // _context.Dispose();
+            // _redis.Dispose();
         }
     }
 }

@@ -1,13 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using Moq;
-using StackExchange.Redis;
 using Xunit;
 using BChatServer.Src.Controllers;
 using BChatServer.Src.DB.Rdb;
-using BChatServer.Src.DB.Rdb.Entity;
 using BChatServer.Src.Model;
 using BChatServer.Src.Service;
-using Microsoft.EntityFrameworkCore;
 using BChatServer.Tests.Common;
 
 namespace BChatServer.Tests.TestSrc.Controllers
@@ -17,12 +13,27 @@ namespace BChatServer.Tests.TestSrc.Controllers
     /// </summary>
     public class UserRegisterControllerTests
     {
-        private readonly Mock<MyContext> _mockContext;
-        private readonly Mock<IConnectionMultiplexer> _mockRedis;
-        private readonly Mock<IDatabase> _mockDb;
-        private readonly Mock<DbSet<UserEntity>> _mockUserSet;
-        private readonly UserRegisterController _controller;
+        /// <summary>
+        /// データベースコンテキスト
+        /// </summary>
+        private readonly MyContext _context;
+
+        /// <summary>
+        /// Redis接続
+        /// </summary>
+        private readonly RedisService _redis;
+
+        /// <summary>
+        /// トークンマネージャ
+        /// </summary>
         private readonly TokenManageService _tokenManageService;
+
+        /// <summary>
+        ///   ユーザ登録ようコントローラー
+        /// </summary>
+        private readonly UserRegisterController _controller;
+
+
 
         private int _currentId;
 
@@ -31,29 +42,12 @@ namespace BChatServer.Tests.TestSrc.Controllers
         /// </summary>
         public UserRegisterControllerTests()
         {
-            _mockContext = new Mock<MyContext>();
-            _mockRedis = new Mock<IConnectionMultiplexer>();
-            _mockDb = new Mock<IDatabase>();
-            _mockUserSet = new Mock<DbSet<UserEntity>>();
-            _tokenManageService = new TokenManageService(_mockRedis.Object);
-            _currentId = 1; // 初期ID
-            _mockRedis.Setup(_ => _.GetDatabase(It.IsAny<int>(), It.IsAny<object>())).Returns(_mockDb.Object);
+            _context = CommonFunc.GenerateContext();
+            _redis = CommonFunc.GenerateRedis();
+            _tokenManageService = new TokenManageService(_redis);
 
-            var data = new List<UserEntity>().AsQueryable();
-            _mockUserSet.As<IQueryable<UserEntity>>().Setup(m => m.Provider).Returns(data.Provider);
-            _mockUserSet.As<IQueryable<UserEntity>>().Setup(m => m.Expression).Returns(data.Expression);
-            _mockUserSet.As<IQueryable<UserEntity>>().Setup(m => m.ElementType).Returns(data.ElementType);
-            _mockUserSet.As<IQueryable<UserEntity>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
-            _mockContext.Setup(c => c.Users).Returns((Microsoft.EntityFrameworkCore.DbSet<UserEntity>)_mockUserSet.Object);
-            // DbSetのAddメソッドをオーバーライドしてIDを自動採番
-            _mockUserSet.Setup(m => m.Add(It.IsAny<UserEntity>())).Callback<UserEntity>(entity =>
-            {
-                entity.Id = _currentId++;
-            });
+            _controller = new UserRegisterController(_context, _redis, _tokenManageService);
 
-
-
-            _controller = new UserRegisterController(_mockContext.Object, _mockRedis.Object, _tokenManageService);
         }
 
         /// <summary>
@@ -164,22 +158,6 @@ namespace BChatServer.Tests.TestSrc.Controllers
                 Password = "password"
             };
 
-            // テストデータを追加
-            var existingUser = new UserEntity
-            {
-                UserId = "testuser",
-                Email = "existing@example.com",
-                Name = "Existing User",
-                PhoneNumber = "1234567890",
-                Password = Src.Common.UserCommonFunc.HashPassword("password")
-            };
-
-            var data = new List<UserEntity> { existingUser }.AsQueryable();
-
-            _mockUserSet.As<IQueryable<UserEntity>>().Setup(m => m.Provider).Returns(data.Provider);
-            _mockUserSet.As<IQueryable<UserEntity>>().Setup(m => m.Expression).Returns(data.Expression);
-            _mockUserSet.As<IQueryable<UserEntity>>().Setup(m => m.ElementType).Returns(data.ElementType);
-            _mockUserSet.As<IQueryable<UserEntity>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
             // Act
             var result = _controller.Post(model);
 

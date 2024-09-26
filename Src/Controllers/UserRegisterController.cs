@@ -26,7 +26,7 @@ public class UserRegisterController : ControllerBase{
     /// <summary>
     /// Redis接続
     /// </summary>
-    private readonly IConnectionMultiplexer _redis;
+    private readonly RedisService _redis;
 
     /// <summary>
     /// トークンマネージャ
@@ -38,7 +38,7 @@ public class UserRegisterController : ControllerBase{
     /// <param name="context"></param>
     /// <param name="redis"></param>
     /// <param name="tokenManageService"></param>
-    public UserRegisterController(MyContext context, IConnectionMultiplexer redis, TokenManageService tokenManageService){
+    public UserRegisterController(MyContext context, RedisService redis, TokenManageService tokenManageService){
         _context = context;
         _redis = redis;
         _tokenManageService = tokenManageService;

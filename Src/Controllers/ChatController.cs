@@ -5,6 +5,7 @@ using BChatServer.Src.DB.Redis;
 using BChatServer.Src.Model;
 using BChatServer.Src.Service;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using Serilog;
 using StackExchange.Redis;
 
@@ -26,7 +27,7 @@ public class ChatController : ControllerBase{
     /// <summary>
     /// Redis接続
     /// </summary>
-    private readonly IConnectionMultiplexer _redis;
+    private readonly RedisService _redis;
 
     /// <summary>
     /// トークンマネージャ
@@ -38,7 +39,7 @@ public class ChatController : ControllerBase{
     /// <param name="context"></param>
     /// <param name="redis"></param>
     /// <param name="tokenManageService"></param>
-    public ChatController(MyContext context, IConnectionMultiplexer redis, TokenManageService tokenManageService){
+    public ChatController(MyContext context, RedisService redis, TokenManageService tokenManageService){
         _context = context;
         _redis = redis;
         _tokenManageService = tokenManageService;
@@ -147,12 +148,12 @@ public class ChatController : ControllerBase{
                 return NotFound();
             }
         
-        var db = _redis.GetDatabase((int)RedisDbTypeEnum.Chat);
-        db.HashSet(model.ChatId+":"+SecurityCommonFunc.GenerateRandomString(5), new HashEntry[] {
+
+        _redis.HashSet(model.ChatId+":"+SecurityCommonFunc.GenerateRandomString(5), new HashEntry[] {
             new HashEntry("UserId", userId),
             new HashEntry("Message", model.Message),
             new HashEntry("SendDate", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.ff"))
-        });
+        },RedisDbTypeEnum.Chat);
 
         }catch(Exception e){
             Log.Error("Send Chat Error", model.ChatId);
@@ -190,32 +191,33 @@ public class ChatController : ControllerBase{
             if(chat == null){
                 return NotFound();
             }
-        
-        var db = _redis.GetDatabase((int)RedisDbTypeEnum.Chat);
-        var server = _redis.GetServer(_redis.GetEndPoints().First());
+    
 
-        // プレフィックスを持つ全てのキーを取得
-        var keys = new List<RedisKey>();
-        var cursor = 0L;
-        do
-        {
-            var result = server.Keys((int)cursor, pattern: model.ChatId + ":*", pageSize: 1000).ToArray();
-            keys.AddRange(result);
-            cursor = result.Length == 0 ? 0 : cursor + 1;
-            Console.WriteLine($"Cursor: {cursor}, Keys: {string.Join(", ", result)}");
-        } while (cursor != 0);
-        var chatData = db.HashGetAll(model.ChatId);
+        var keys = _redis.GetValuesByPrefix(model.ChatId+":", RedisDbTypeEnum.Chat);
+
         var response = new ChatSendResponseModel();
-        foreach(var data in chatData){
-            ChatSendResponse chatSendResponse = new ChatSendResponse
+            foreach (var hashEntry in keys)
             {
-                ChatId = model.ChatId,
-                UserId = data.Name == "UserId" ? (data.Value.HasValue ? (string?)data.Value ?? "" : "") : "",
-                Message = data.Name == "Message" ? (data.Value.HasValue ? (string?)data.Value ?? "" : "") : "",
-                CreatedAt = data.Name == "SendDate" && data.Value.HasValue && !string.IsNullOrEmpty(data.Value) ? DateTime.Parse(data.Value.ToString()) : DateTime.MinValue
-            };
-            response.ChatSendResponses.Add(chatSendResponse);
-        }
+                ChatSendResponse responseTemp = new ChatSendResponse();
+                foreach (var entry in hashEntry)
+                {
+                    
+                    if (entry.Name == "UserId")
+                    {
+                        responseTemp.UserId = entry.Value.HasValue ? entry.Value.ToString() : string.Empty;
+                    }
+                    else if (entry.Name == "Message")
+                    {
+                        responseTemp.Message = entry.Value.HasValue ? entry.Value.ToString() : string.Empty;
+                    }
+                    else if (entry.Name == "SendDate")
+                    {
+                        responseTemp.CreatedAt = entry.Value.HasValue && !string.IsNullOrEmpty(entry.Value.ToString()) ? DateTime.Parse(entry.Value.ToString()) : DateTime.MinValue;
+                    }
+                }
+                response.ChatSendResponses.Add(responseTemp);
+            }
+
         return Ok(response);
         }catch(Exception e){
             Log.Error("Get Chat Error", model.ChatId);
@@ -260,4 +262,19 @@ public class ChatController : ControllerBase{
             return StatusCode(500, e.Message);
         }
     }
+
+    /// <summary>
+    /// フィールドを抽出する
+    /// </summary>
+    /// <param name="data"></param>
+    /// <param name="fieldName"></param>
+    /// <returns></returns>
+    private string ExtractField(RedisValue data, string fieldName)
+    {
+        // データからフィールドを抽出するロジックを実装
+        // 例: JSONデータからフィールドを抽出する
+        var jsonData = data.HasValue && !string.IsNullOrEmpty(data.ToString()) ? JsonConvert.DeserializeObject<Dictionary<string, string>>(data.ToString()) : null;
+        return jsonData != null && jsonData.ContainsKey(fieldName) ? jsonData[fieldName] : string.Empty;
+    }
+
 }

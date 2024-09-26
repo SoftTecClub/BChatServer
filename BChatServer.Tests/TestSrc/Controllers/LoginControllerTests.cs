@@ -8,6 +8,7 @@ using StackExchange.Redis;
 using Microsoft.EntityFrameworkCore;
 using BChatServer.Tests.Common;
 using BChatServer.Src.Service;
+using Serilog;
 
 namespace BChatServer.Tests.TestSrc.Controllers;
     /// <summary>
@@ -15,81 +16,58 @@ namespace BChatServer.Tests.TestSrc.Controllers;
     /// </summary>
     public class LoginControllerTests
     {
-        private readonly Mock<MyContext> _mockContext;
-        private readonly Mock<IConnectionMultiplexer> _mockRedis;
-        private readonly LoginController _controller;
-        private readonly Mock<TokenManageService> _mockTokenService;
-        private readonly Mock<IDatabase> _mockDatabase;
+        /// <summary>
+        /// データベースコンテキスト
+        /// </summary>
+        private readonly MyContext _context;
 
-        private readonly Mock<IDatabase> _mockDb;
+        /// <summary>
+        /// Redis接続
+        /// </summary>
+        private readonly RedisService _redis;
+
+        /// <summary>
+        /// トークンマネージャ
+        /// </summary>
+        private readonly TokenManageService _tokenManageService;
+
+        /// <summary>
+        ///   ユーザ登録ようコントローラー
+        /// </summary>
+        private readonly UserRegisterController _userRegisterController;
 
         /// <summary>
         /// ユーザ名とプレーンパスワードのペア
         /// </summary>
         private readonly Dictionary<string, string> _userPlainPass= new Dictionary<string, string>();
-        private readonly List<UserEntity> _users = new List<UserEntity>();  
+        private readonly List<UserEntity> _users = new List<UserEntity>();
+
+        private LoginController _controller;  
+
         /// <summary>
         /// ログインAPIのテストコンストラクタ
         /// </summary>
         public LoginControllerTests()
         {
-            //モックデータベースに対しての操作を行うためのデータストア
-            var mockDataStore = new Dictionary<string, RedisValue>();
+            _context = CommonFunc.GenerateContext();
+            _redis = CommonFunc.GenerateRedis();
+            _tokenManageService = new TokenManageService(_redis);
 
-            // モックの設定
-            _mockContext = new Mock<MyContext>();
-            _mockRedis = new Mock<IConnectionMultiplexer>();
-            _mockDatabase = new Mock<IDatabase>();
-            _mockDb = new Mock<IDatabase>();
-
-            // RedisからDBを返す時モックDBを返すようにする
-            _mockRedis.Setup(_ => _.GetDatabase(It.IsAny<int>(), It.IsAny<object>())).Returns(_mockDb.Object);
-
-            //StringSetメソッドがよびだれた時の処理
-            // モックの設定
-            _mockDb.Setup(db => db.StringSet( It.IsAny<RedisKey>(),
-                It.IsAny<RedisValue>(),
-                It.IsAny<TimeSpan?>(),
-                It.IsAny<bool>(),
-                It.IsAny<When>(),
-                It.IsAny<CommandFlags>()))
-                .Returns((RedisKey key, RedisValue value, TimeSpan? expiry, bool keepTtl, When when, CommandFlags flags) =>
-                {
-                    mockDataStore[key.ToString()] = value;
-                    return true;
-                });
-
-            _mockDb.Setup(db => db.StringGet(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()))
-                .Returns((RedisKey key, CommandFlags flags) =>
-                {
-                    return mockDataStore.TryGetValue(key.ToString(), out var value) ? value : RedisValue.Null;
-                });
-
-
-            // TokenManageServiceのモックを設定
-            _mockTokenService = new Mock<TokenManageService>(_mockRedis.Object);
-            _mockTokenService.SetupProperty(_ => _.ExpiryDurationSec, CommonFunc.Token_ExpireTimeForSec);
-
-            // テストデータの追加
+            _controller = new LoginController(_context, _redis, _tokenManageService);
+            _userRegisterController = new UserRegisterController(_context, _redis, _tokenManageService);
             _users = UserCommonFunc.CreateUserEntity(10);
-            _users.ForEach(u => 
+
+            foreach (var user in _users)
             {
-                _userPlainPass.Add(u.UserId, u.Password);
-                u.Password = Src.Common.UserCommonFunc.HashPassword(u.Password);
-            });
-
-            // DbSet<UserEntity> のモックを作成
-            var mockDbSet = new Mock<DbSet<UserEntity>>();
-            var usersQueryable = _users.AsQueryable();
-            mockDbSet.As<IQueryable<UserEntity>>().Setup(m => m.Provider).Returns(usersQueryable.Provider);
-            mockDbSet.As<IQueryable<UserEntity>>().Setup(m => m.Expression).Returns(usersQueryable.Expression);
-            mockDbSet.As<IQueryable<UserEntity>>().Setup(m => m.ElementType).Returns(usersQueryable.ElementType);
-            mockDbSet.As<IQueryable<UserEntity>>().Setup(m => m.GetEnumerator()).Returns(usersQueryable.GetEnumerator());
-
-            _mockContext.Setup(c => c.Users).Returns(mockDbSet.Object);
-
-            // LoginControllerのインスタンスを作成
-            _controller = new LoginController(_mockContext.Object, _mockRedis.Object, _mockTokenService.Object);
+                var result = _userRegisterController.Post(new UserRegisterReceiveModel
+                {
+                    Email = user.Email,
+                    UserId = user.UserId,
+                    Name = user.Name,
+                    Password = user.Password,
+                    PhoneNumber = user.PhoneNumber
+                });
+            }
         }
         /// <summary>
         /// テストログイン成功パターン

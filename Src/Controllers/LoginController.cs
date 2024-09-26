@@ -27,7 +27,7 @@ namespace BChatServer.Src.Controllers
         /// <summary>
         /// Redis接続
         /// </summary>
-        private readonly IConnectionMultiplexer _redis;
+        private readonly RedisService _redis;
 
         /// <summary>
         /// トークンマネージャ
@@ -40,7 +40,7 @@ namespace BChatServer.Src.Controllers
         /// <param name="context"></param>
         /// <param name="redis"></param>
         /// <param name="tokenManageService"></param>
-        public LoginController(MyContext context, IConnectionMultiplexer redis, TokenManageService tokenManageService)
+        public LoginController(MyContext context, RedisService redis, TokenManageService tokenManageService)
         {
             _context = context;
             _redis = redis;
