@@ -1,11 +1,11 @@
 using BChatServer.Src.Controllers;
 using BChatServer.Src.DB.Rdb;
 using BChatServer.Src.DB.Rdb.Entity;
+using BChatServer.Src.DB.Redis;
 using BChatServer.Src.Model;
 using BChatServer.Src.Service;
 using BChatServer.Tests.Common;
 using Microsoft.AspNetCore.Mvc;
-using StackExchange.Redis;
 using Xunit;
 
 namespace BChatServer.Tests.Controllers
@@ -249,11 +249,16 @@ namespace BChatServer.Tests.Controllers
             foreach (var user in _users)
             {
                 var userToDelete = _context.Users.SingleOrDefault(u => u.UserId == user.UserId);
-                var chatToDelete = _context.Chats.Where(c => c.UserId == user.UserId);
+                List<ChatEntity> chatToDelete = _context.Chats.Where(c => c.UserId == user.UserId).ToList();
                 if (userToDelete != null)
                 {
                     _context.Users.Remove(userToDelete);
-                    _context.Chats.RemoveRange(chatToDelete);
+                    if(chatToDelete != null  && chatToDelete.Count != 0){
+                         _context.Chats.RemoveRange(chatToDelete);
+                        _redis.DeleteKeysByPrefix(chatToDelete[0].ChatId, RedisDbTypeEnum.Chat);
+                    }
+
+
                 }
             }
             _context.SaveChanges();

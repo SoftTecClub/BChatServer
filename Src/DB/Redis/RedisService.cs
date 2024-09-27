@@ -100,4 +100,21 @@ public class RedisService
         _db = _redis.GetDatabase((int)type);
         _db.HashSet(key, entry);
     }
+
+        /// <summary>
+    /// 指定したプレフィックスを持つキーを削除する
+    /// </summary>
+    /// <param name="prefix"></param>
+    /// <param name="type"></param>
+    public void DeleteKeysByPrefix(string prefix, RedisDbTypeEnum type)
+    {
+        var keys = GetKeysByPrefix(prefix, type);
+        _db = _redis.GetDatabase((int)type);
+
+        foreach (var key in keys)
+        {
+            _db.KeyDelete(key);
+            Console.WriteLine($"Deleted key: {key}");
+        }
+    }
 }
