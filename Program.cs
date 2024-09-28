@@ -39,7 +39,7 @@ namespace BChatServer{
             if(redisConnectionString  is null){
                 throw new ArgumentNullException("Redis connection string is not set");
             }else{
-                builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect($"{redisConnectionString},abortConnect=false"));
+                builder.Services.AddSingleton<RedisService>(new RedisService($"{redisConnectionString},abortConnect=false"));
             }
             
             //DbContextの接続設定

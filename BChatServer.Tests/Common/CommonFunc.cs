@@ -3,6 +3,8 @@ using System.Security.Cryptography;
 using System.Text;
 using BChatServer.Src.DB.Rdb;
 using Microsoft.EntityFrameworkCore;
+using BChatServer.Src.DB.Rdb;
+using Microsoft.EntityFrameworkCore;
 using Moq;
 using StackExchange.Redis;
 /// <summary>
@@ -136,14 +138,14 @@ public static class CommonFunc{
     /// Redisを生成するメソッド
     /// </summary>
     /// <returns></returns>
-    public static IConnectionMultiplexer GenerateRedis(){
+    public static RedisService GenerateRedis(){
         var redisConnectionString = _configuration.GetSection("Redis")["ConnectionString"];
         if (string.IsNullOrEmpty(redisConnectionString))
         {
             throw new ArgumentNullException(nameof(redisConnectionString), "Redis connection string cannot be null or empty.");
         }
         redisConnectionString += ",abortConnect=false";
-        return ConnectionMultiplexer.Connect(redisConnectionString);
+        return new RedisService(redisConnectionString);
     }
 
     private static readonly Random _random = new Random();

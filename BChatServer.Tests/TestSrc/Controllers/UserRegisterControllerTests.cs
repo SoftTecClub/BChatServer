@@ -1,59 +1,52 @@
 using Microsoft.AspNetCore.Mvc;
-using Moq;
-using StackExchange.Redis;
 using Xunit;
 using BChatServer.Src.Controllers;
 using BChatServer.Src.DB.Rdb;
-using BChatServer.Src.DB.Rdb.Entity;
 using BChatServer.Src.Model;
 using BChatServer.Src.Service;
-using Microsoft.EntityFrameworkCore;
 using BChatServer.Tests.Common;
+using BChatServer.Src.DB.Rdb.Entity;
 
 namespace BChatServer.Tests.TestSrc.Controllers
 {
     /// <summary>
     /// ユーザ登録APIのテストクラス
     /// </summary>
-    public class UserRegisterControllerTests
+    public class UserRegisterControllerTests : IDisposable
     {
-        private readonly Mock<MyContext> _mockContext;
-        private readonly Mock<IConnectionMultiplexer> _mockRedis;
-        private readonly Mock<IDatabase> _mockDb;
-        private readonly Mock<DbSet<UserEntity>> _mockUserSet;
-        private readonly UserRegisterController _controller;
+        /// <summary>
+        /// データベースコンテキスト
+        /// </summary>
+        private readonly MyContext _context;
+
+        /// <summary>
+        /// Redis接続
+        /// </summary>
+        private readonly RedisService _redis;
+
+        /// <summary>
+        /// トークンマネージャ
+        /// </summary>
         private readonly TokenManageService _tokenManageService;
 
-        private int _currentId;
+        /// <summary>
+        ///   ユーザ登録ようコントローラー
+        /// </summary>
+        private readonly UserRegisterController _controller;
+
+        private readonly List<UserEntity> _users = new List<UserEntity>();
 
         /// <summary>
         /// ユーザ登録APIのテストコンストラクタ
         /// </summary>
         public UserRegisterControllerTests()
         {
-            _mockContext = new Mock<MyContext>();
-            _mockRedis = new Mock<IConnectionMultiplexer>();
-            _mockDb = new Mock<IDatabase>();
-            _mockUserSet = new Mock<DbSet<UserEntity>>();
-            _tokenManageService = new TokenManageService(_mockRedis.Object);
-            _currentId = 1; // 初期ID
-            _mockRedis.Setup(_ => _.GetDatabase(It.IsAny<int>(), It.IsAny<object>())).Returns(_mockDb.Object);
+            _context = CommonFunc.GenerateContext();
+            _redis = CommonFunc.GenerateRedis();
+            _tokenManageService = new TokenManageService(_redis);
 
-            var data = new List<UserEntity>().AsQueryable();
-            _mockUserSet.As<IQueryable<UserEntity>>().Setup(m => m.Provider).Returns(data.Provider);
-            _mockUserSet.As<IQueryable<UserEntity>>().Setup(m => m.Expression).Returns(data.Expression);
-            _mockUserSet.As<IQueryable<UserEntity>>().Setup(m => m.ElementType).Returns(data.ElementType);
-            _mockUserSet.As<IQueryable<UserEntity>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
-            _mockContext.Setup(c => c.Users).Returns((Microsoft.EntityFrameworkCore.DbSet<UserEntity>)_mockUserSet.Object);
-            // DbSetのAddメソッドをオーバーライドしてIDを自動採番
-            _mockUserSet.Setup(m => m.Add(It.IsAny<UserEntity>())).Callback<UserEntity>(entity =>
-            {
-                entity.Id = _currentId++;
-            });
+            _controller = new UserRegisterController(_context, _redis, _tokenManageService);
 
-
-
-            _controller = new UserRegisterController(_mockContext.Object, _mockRedis.Object, _tokenManageService);
         }
 
         /// <summary>
@@ -112,12 +105,20 @@ namespace BChatServer.Tests.TestSrc.Controllers
             {
 
                 Email = "test@test.com",
-                UserId = "test_user",
+                UserId = "test_user0",
                 PhoneNumber = "+819012345678"
             };
             // Act
             var errResult = _controller.Post(modelErr);
             var okResult = _controller.Post(modelOk);
+            _users.Add(new UserEntity
+            {
+                Name = modelOk.Name,
+                UserId = modelOk.UserId,
+                Email = modelOk.Email,
+                PhoneNumber = modelOk.PhoneNumber,
+                Password = modelOk.Password
+            });
             // Assert
             if (errResult is BadRequestObjectResult badRequestResult && badRequestResult.Value is UserRegisterResponseModel response)
             {
@@ -158,30 +159,24 @@ namespace BChatServer.Tests.TestSrc.Controllers
             var model = new UserRegisterReceiveModel
             {
                 Name = "Test User",
-                UserId = "testuser",
+                UserId = "testuser1",
                 Email = "test@example.com",
                 PhoneNumber = CommonFunc.GenerateRandomE164PhoneNumber(),
                 Password = "password"
             };
 
-            // テストデータを追加
-            var existingUser = new UserEntity
-            {
-                UserId = "testuser",
-                Email = "existing@example.com",
-                Name = "Existing User",
-                PhoneNumber = "1234567890",
-                Password = Src.Common.UserCommonFunc.HashPassword("password")
-            };
-
-            var data = new List<UserEntity> { existingUser }.AsQueryable();
-
-            _mockUserSet.As<IQueryable<UserEntity>>().Setup(m => m.Provider).Returns(data.Provider);
-            _mockUserSet.As<IQueryable<UserEntity>>().Setup(m => m.Expression).Returns(data.Expression);
-            _mockUserSet.As<IQueryable<UserEntity>>().Setup(m => m.ElementType).Returns(data.ElementType);
-            _mockUserSet.As<IQueryable<UserEntity>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
             // Act
+            _controller.Post(model);
             var result = _controller.Post(model);
+
+            _users.Add(new UserEntity
+            {
+                Name = model.Name,
+                UserId = model.UserId,
+                Email = model.Email,
+                PhoneNumber = model.PhoneNumber,
+                Password = model.Password
+            });
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -199,7 +194,7 @@ namespace BChatServer.Tests.TestSrc.Controllers
             var model = new UserRegisterReceiveModel
             {
                 Name = "Test User",
-                UserId = "testuser",
+                UserId = "testuser2",
                 Email = "test@example.com",
                 PhoneNumber = CommonFunc.GenerateRandomE164PhoneNumber(),
                 Password = "password"
@@ -211,6 +206,32 @@ namespace BChatServer.Tests.TestSrc.Controllers
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.Equal("User registration success", okResult.Value);
+            _users.Add(new UserEntity
+            {
+                Name = model.Name,
+                UserId = model.UserId,
+                Email = model.Email,
+                PhoneNumber = model.PhoneNumber,
+                Password = model.Password
+            });
+        }
+
+
+        /// <summary>
+        /// テスト終了時の後処理
+        /// </summary>
+        public void Dispose()
+        {
+            foreach (var user in _users)
+            {
+                var userToDelete = _context.Users.SingleOrDefault(u => u.UserId == user.UserId);
+                if (userToDelete != null)
+                {
+                    _context.Users.Remove(userToDelete);
+                }
+            }
+            _context.SaveChanges();
+            _context.Dispose();
         }
     }
 }

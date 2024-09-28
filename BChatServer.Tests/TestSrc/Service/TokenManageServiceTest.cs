@@ -12,8 +12,8 @@ namespace BChatServer.Tests.TestSrc.Service
     /// </summary>
     public class TokenManageServiceTest
     {
-        private readonly Mock<IConnectionMultiplexer> _mockRedis;
-        private readonly Mock<IDatabase> _mockDb;
+        private readonly RedisService _redis;
+
         private readonly TokenManageService _tokenManageService;
 
         /// <summary>
@@ -35,51 +35,10 @@ namespace BChatServer.Tests.TestSrc.Service
         /// </summary>
         public TokenManageServiceTest()
         {
-            var mockDataStore = new Dictionary<string, MockRedisEntry>();
 
-            // モックの作成
-            _mockRedis = new Mock<IConnectionMultiplexer>();
-            _mockDb = new Mock<IDatabase>();
-
-            // RedisからDBを返す時モックDBを返すようにする
-            _mockRedis.Setup(_ => _.GetDatabase(It.IsAny<int>(), It.IsAny<object>())).Returns(_mockDb.Object);
-
-            // モックの設定
-            _mockDb.Setup(db => db.StringSet( It.IsAny<RedisKey>(),
-                It.IsAny<RedisValue>(),
-                It.IsAny<TimeSpan?>(),
-                It.IsAny<bool>(),
-                It.IsAny<When>(),
-                It.IsAny<CommandFlags>()))
-                .Returns((RedisKey key, RedisValue value, TimeSpan? expiry, bool keepTtl, When when, CommandFlags flags) =>
-                {
-                    MockRedisEntry entry = new MockRedisEntry
-                    {
-                        Value = value,
-                        ExpiryTime = expiry.HasValue ? DateTime.UtcNow.Add(expiry.Value) : (DateTime?)null
-                    };
-
-                    mockDataStore[key.ToString()] = entry;
-                    return true;
-                });
-
-            _mockDb.Setup(db => db.StringGet(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()))
-                .Returns((RedisKey key, CommandFlags flags) =>
-                {
-                    if (mockDataStore.TryGetValue(key.ToString(), out var entry))
-                    {
-                        if (entry.ExpiryTime.HasValue && entry.ExpiryTime.Value < DateTime.UtcNow)
-                        {
-                            // 有効期限が過ぎている場合は RedisValue.Null を返す
-                            return RedisValue.Null;
-                        }
-                        return entry.Value;
-                    }
-                    return RedisValue.Null;
-                });
-
+            _redis = CommonFunc.GenerateRedis();
             // モックを使ってTokenManageServiceのインスタンスを作成
-            _tokenManageService = new TokenManageService(_mockRedis.Object);
+            _tokenManageService = new TokenManageService(_redis);
             _tokenManageService.ExpiryDurationSec = CommonFunc.Token_ExpireTimeForSec;
         }
 

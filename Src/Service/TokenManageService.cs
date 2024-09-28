@@ -5,6 +5,7 @@ using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Cryptography;
 using StackExchange.Redis;
+using BChatServer.Src.DB.Redis;
 namespace BChatServer.Src.Service;
 
 /// <summary>
@@ -20,7 +21,7 @@ public class TokenManageService
     
     private static LinkedList<string> TokenBlacklist = new LinkedList<string>();
     private const int MaxBlacklistSize = 100; // ブラックリストの最大サイズ
-    private readonly IConnectionMultiplexer _redis;
+    private readonly RedisService _redis;
 
     /// <summary>
     /// トークンの有効期限
@@ -31,10 +32,10 @@ public class TokenManageService
     /// <summary>
     /// トークン管理サービスのコンストラクタ
     /// </summary>
-    /// <param name="redis"></param>
-    public TokenManageService(IConnectionMultiplexer redis)
+    /// <param name="redisService"></param>
+    public TokenManageService(RedisService redisService)
     {
-        _redis = redis;
+        _redis = redisService;
     }
    
    /// <summary>
@@ -44,8 +45,7 @@ public class TokenManageService
    /// <returns></returns>
     public string GenerateToken(string userId)
     {
-        var db = _redis.GetDatabase();
-        string? oldToken = GetToken(userId);
+        string? oldToken = _redis.GetVauluesByKey(userId, RedisDbTypeEnum.AccessToken);
 
         if (!string.IsNullOrEmpty(oldToken))
         {
@@ -56,7 +56,7 @@ public class TokenManageService
             }
             TokenBlacklist.AddLast(oldToken);
             // 古いトークンを無効化
-            db.KeyDelete(userId);
+            _redis.DeleteKey(userId, RedisDbTypeEnum.AccessToken);
         }
 
         var tokenHandler = new JwtSecurityTokenHandler();
@@ -77,7 +77,7 @@ public class TokenManageService
         var tokenString = tokenHandler.WriteToken(token);
 
         // 新しいトークンを保存
-        bool isSet = db.StringSet(userId, tokenString, TimeSpan.FromSeconds(ExpiryDurationSec));
+        bool isSet = _redis.StringSet(userId, tokenString, RedisDbTypeEnum.AccessToken, TimeSpan.FromSeconds(ExpiryDurationSec));
         if (!isSet)
         {
             throw new Exception("Failed to set token");
@@ -88,14 +88,14 @@ public class TokenManageService
     }
 
     /// <summary>
-    /// userIdに対応するトークンを取得する
+    /// トークンを取得する
     /// </summary>
     /// <param name="userId"></param>
     /// <returns></returns>
     public string? GetToken(string userId)
     {
-        var db = _redis.GetDatabase();
-        return db.StringGet(userId);
+        var token = _redis.GetVauluesByKey(userId, RedisDbTypeEnum.AccessToken);
+        return token;
     }
     /// <summary>
     /// 秘密鍵を生成する
