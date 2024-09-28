@@ -5,7 +5,10 @@ using BChatServer.Src.DB.Redis;
 using BChatServer.Src.Model;
 using BChatServer.Src.Service;
 using Microsoft.AspNetCore.Mvc;
+<<<<<<< HEAD
 using Newtonsoft.Json;
+=======
+>>>>>>> origin/main
 using Serilog;
 using StackExchange.Redis;
 
@@ -27,7 +30,11 @@ public class ChatController : ControllerBase{
     /// <summary>
     /// Redis接続
     /// </summary>
+<<<<<<< HEAD
     private readonly RedisService _redis;
+=======
+    private readonly IConnectionMultiplexer _redis;
+>>>>>>> origin/main
 
     /// <summary>
     /// トークンマネージャ
@@ -39,7 +46,11 @@ public class ChatController : ControllerBase{
     /// <param name="context"></param>
     /// <param name="redis"></param>
     /// <param name="tokenManageService"></param>
+<<<<<<< HEAD
     public ChatController(MyContext context, RedisService redis, TokenManageService tokenManageService){
+=======
+    public ChatController(MyContext context, IConnectionMultiplexer redis, TokenManageService tokenManageService){
+>>>>>>> origin/main
         _context = context;
         _redis = redis;
         _tokenManageService = tokenManageService;
@@ -148,12 +159,21 @@ public class ChatController : ControllerBase{
                 return NotFound();
             }
         
+<<<<<<< HEAD
 
         _redis.HashSet(model.ChatId+":"+SecurityCommonFunc.GenerateRandomString(5), new HashEntry[] {
             new HashEntry("UserId", userId),
             new HashEntry("Message", model.Message),
             new HashEntry("SendDate", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.ff"))
         },RedisDbTypeEnum.Chat);
+=======
+        var db = _redis.GetDatabase((int)RedisDbTypeEnum.Chat);
+        db.HashSet(model.ChatId+":"+SecurityCommonFunc.GenerateRandomString(5), new HashEntry[] {
+            new HashEntry("UserId", userId),
+            new HashEntry("Message", model.Message),
+            new HashEntry("SendDate", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.ff"))
+        });
+>>>>>>> origin/main
 
         }catch(Exception e){
             Log.Error("Send Chat Error", model.ChatId);
@@ -191,6 +211,7 @@ public class ChatController : ControllerBase{
             if(chat == null){
                 return NotFound();
             }
+<<<<<<< HEAD
     
 
         var keys = _redis.GetValuesByPrefix(model.ChatId+":", RedisDbTypeEnum.Chat);
@@ -218,6 +239,34 @@ public class ChatController : ControllerBase{
                 response.ChatSendResponses.Add(responseTemp);
             }
 
+=======
+        
+        var db = _redis.GetDatabase((int)RedisDbTypeEnum.Chat);
+        var server = _redis.GetServer(_redis.GetEndPoints().First());
+
+        // プレフィックスを持つ全てのキーを取得
+        var keys = new List<RedisKey>();
+        var cursor = 0L;
+        do
+        {
+            var result = server.Keys((int)cursor, pattern: model.ChatId + ":*", pageSize: 1000).ToArray();
+            keys.AddRange(result);
+            cursor = result.Length == 0 ? 0 : cursor + 1;
+            Console.WriteLine($"Cursor: {cursor}, Keys: {string.Join(", ", result)}");
+        } while (cursor != 0);
+        var chatData = db.HashGetAll(model.ChatId);
+        var response = new ChatSendResponseModel();
+        foreach(var data in chatData){
+            ChatSendResponse chatSendResponse = new ChatSendResponse
+            {
+                ChatId = model.ChatId,
+                UserId = data.Name == "UserId" ? (data.Value.HasValue ? (string?)data.Value ?? "" : "") : "",
+                Message = data.Name == "Message" ? (data.Value.HasValue ? (string?)data.Value ?? "" : "") : "",
+                CreatedAt = data.Name == "SendDate" && data.Value.HasValue && !string.IsNullOrEmpty(data.Value) ? DateTime.Parse(data.Value.ToString()) : DateTime.MinValue
+            };
+            response.ChatSendResponses.Add(chatSendResponse);
+        }
+>>>>>>> origin/main
         return Ok(response);
         }catch(Exception e){
             Log.Error("Get Chat Error", model.ChatId);
@@ -262,6 +311,7 @@ public class ChatController : ControllerBase{
             return StatusCode(500, e.Message);
         }
     }
+<<<<<<< HEAD
 
     /// <summary>
     /// フィールドを抽出する
@@ -277,4 +327,6 @@ public class ChatController : ControllerBase{
         return jsonData != null && jsonData.ContainsKey(fieldName) ? jsonData[fieldName] : string.Empty;
     }
 
+=======
+>>>>>>> origin/main
 }

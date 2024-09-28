@@ -1,11 +1,18 @@
 using BChatServer.Src.Controllers;
 using BChatServer.Src.DB.Rdb;
 using BChatServer.Src.DB.Rdb.Entity;
+<<<<<<< HEAD
 using BChatServer.Src.DB.Redis;
+=======
+>>>>>>> origin/main
 using BChatServer.Src.Model;
 using BChatServer.Src.Service;
 using BChatServer.Tests.Common;
 using Microsoft.AspNetCore.Mvc;
+<<<<<<< HEAD
+=======
+using StackExchange.Redis;
+>>>>>>> origin/main
 using Xunit;
 
 namespace BChatServer.Tests.Controllers
@@ -16,7 +23,11 @@ namespace BChatServer.Tests.Controllers
     public class ChatControllerTests: IDisposable
     {
         private readonly MyContext _context;
+<<<<<<< HEAD
         private readonly RedisService _redis;
+=======
+        private readonly IConnectionMultiplexer _redis;
+>>>>>>> origin/main
         private readonly TokenManageService _tokenService;
         private readonly ChatController _controller;
 
@@ -249,6 +260,7 @@ namespace BChatServer.Tests.Controllers
             foreach (var user in _users)
             {
                 var userToDelete = _context.Users.SingleOrDefault(u => u.UserId == user.UserId);
+<<<<<<< HEAD
                 List<ChatEntity> chatToDelete = _context.Chats.Where(c => c.UserId == user.UserId).ToList();
                 if (userToDelete != null)
                 {
@@ -259,10 +271,18 @@ namespace BChatServer.Tests.Controllers
                     }
 
 
+=======
+                var chatToDelete = _context.Chats.Where(c => c.UserId == user.UserId);
+                if (userToDelete != null)
+                {
+                    _context.Users.Remove(userToDelete);
+                    _context.Chats.RemoveRange(chatToDelete);
+>>>>>>> origin/main
                 }
             }
             _context.SaveChanges();
             // Redisのキーを個別に削除
+<<<<<<< HEAD
             // var server = _redis.GetServer(_redis.GetEndPoints().First());
             // var keys = server.Keys();
             // foreach (var key in keys)
@@ -271,6 +291,16 @@ namespace BChatServer.Tests.Controllers
             // }
             // _context.Dispose();
             // _redis.Dispose();
+=======
+            var server = _redis.GetServer(_redis.GetEndPoints().First());
+            var keys = server.Keys();
+            foreach (var key in keys)
+            {
+                _redis.GetDatabase().KeyDelete(key);
+            }
+            _context.Dispose();
+            _redis.Dispose();
+>>>>>>> origin/main
         }
     }
 }
