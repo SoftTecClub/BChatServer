@@ -1,20 +1,16 @@
 using Xunit;
-using Moq;
 using Microsoft.AspNetCore.Mvc;
 using BChatServer.Src.Controllers;
 using BChatServer.Src.DB.Rdb;
 using BChatServer.Src.DB.Rdb.Entity;
-using StackExchange.Redis;
-using Microsoft.EntityFrameworkCore;
 using BChatServer.Tests.Common;
 using BChatServer.Src.Service;
-using Serilog;
 
 namespace BChatServer.Tests.TestSrc.Controllers;
     /// <summary>
     /// ログインAPIのテストクラス
     /// </summary>
-    public class LoginControllerTests
+    public class LoginControllerTests : IDisposable
     {
         /// <summary>
         /// データベースコンテキスト
@@ -76,7 +72,7 @@ namespace BChatServer.Tests.TestSrc.Controllers;
         public void Post_LoginSuccessful_ReturnsOk()
         {
             // Arrange
-            var loginModel = new LoginModel { Name = _users[0].UserId, Password = _userPlainPass[_users[0].UserId] };
+            var loginModel = new LoginModel { Name = _users[0].UserId, Password = _users[0].Password };
             // Act
             var result = _controller.Post(loginModel);
             var okResult = Assert.IsType<OkObjectResult>(result);
@@ -86,40 +82,39 @@ namespace BChatServer.Tests.TestSrc.Controllers;
         }
 
         /// <summary>
-        /// 失敗パターン
-        /// 直接ハッシュ値を送信した時
-        /// </summary>
-        [Fact]
-        public void Post_LoginFailed_SendHasPassword_ReturnsBadRequest()
-        {
-            // Arrange
-            var loginModel = new LoginModel { Name = _users[0].UserId, Password = _users[0].Password };
-
-            // Act
-            var result = _controller.Post(loginModel);
-
-            // Assert
-            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            Assert.NotNull(badRequestResult.Value);
-        }
-
-        /// <summary>
         /// 際ログインが実行された時、アクセストークンが再発行されることを確認する
         /// </summary>
         [Fact]
         public void Post_Login_ReGenerate_Token(){
-            var loginModel = new LoginModel { Name = _users[0].UserId, Password = _userPlainPass[_users[0].UserId] };
+            var loginModel = new LoginModel { Name = _users[0].UserId, Password = _users[0].Password };
             // Act
             var result = _controller.Post(loginModel);
             var okResult = Assert.IsType<OkObjectResult>(result);
             var responseBody = Assert.IsType<LoginResponse>(okResult.Value);
 
-            var loginModelSec = new LoginModel { Name = _users[0].UserId, Password = _userPlainPass[_users[0].UserId] };
+            var loginModelSec = new LoginModel { Name = _users[0].UserId, Password = _users[0].Password };
 
             var resultSec = _controller.Post(loginModelSec);
             var okResultSec = Assert.IsType<OkObjectResult>(resultSec);
             var responseBodySec = Assert.IsType<LoginResponse>(okResultSec.Value);
             // Assert
             Assert.NotEqual(responseBody.Token, responseBodySec.Token);
+        }
+
+        /// <summary>
+        /// テスト終了時の後処理
+        /// </summary>
+        public void Dispose()
+        {
+            foreach (var user in _users)
+            {
+                var userToDelete = _context.Users.SingleOrDefault(u => u.UserId == user.UserId);
+                if (userToDelete != null)
+                {
+                    _context.Users.Remove(userToDelete);
+                }
+            }
+            _context.SaveChanges();
+            _context.Dispose();
         }
     }

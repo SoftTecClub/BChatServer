@@ -92,10 +92,10 @@ public class TokenManageService
     /// </summary>
     /// <param name="userId"></param>
     /// <returns></returns>
-    public string GetToken(string userId)
+    public string? GetToken(string userId)
     {
         var token = _redis.GetVauluesByKey(userId, RedisDbTypeEnum.AccessToken);
-        return token ?? string.Empty;
+        return token;
     }
     /// <summary>
     /// 秘密鍵を生成する

@@ -5,13 +5,14 @@ using BChatServer.Src.DB.Rdb;
 using BChatServer.Src.Model;
 using BChatServer.Src.Service;
 using BChatServer.Tests.Common;
+using BChatServer.Src.DB.Rdb.Entity;
 
 namespace BChatServer.Tests.TestSrc.Controllers
 {
     /// <summary>
     /// ユーザ登録APIのテストクラス
     /// </summary>
-    public class UserRegisterControllerTests
+    public class UserRegisterControllerTests : IDisposable
     {
         /// <summary>
         /// データベースコンテキスト
@@ -33,9 +34,7 @@ namespace BChatServer.Tests.TestSrc.Controllers
         /// </summary>
         private readonly UserRegisterController _controller;
 
-
-
-        private int _currentId;
+        private readonly List<UserEntity> _users = new List<UserEntity>();
 
         /// <summary>
         /// ユーザ登録APIのテストコンストラクタ
@@ -106,12 +105,20 @@ namespace BChatServer.Tests.TestSrc.Controllers
             {
 
                 Email = "test@test.com",
-                UserId = "test_user",
+                UserId = "test_user0",
                 PhoneNumber = "+819012345678"
             };
             // Act
             var errResult = _controller.Post(modelErr);
             var okResult = _controller.Post(modelOk);
+            _users.Add(new UserEntity
+            {
+                Name = modelOk.Name,
+                UserId = modelOk.UserId,
+                Email = modelOk.Email,
+                PhoneNumber = modelOk.PhoneNumber,
+                Password = modelOk.Password
+            });
             // Assert
             if (errResult is BadRequestObjectResult badRequestResult && badRequestResult.Value is UserRegisterResponseModel response)
             {
@@ -152,14 +159,24 @@ namespace BChatServer.Tests.TestSrc.Controllers
             var model = new UserRegisterReceiveModel
             {
                 Name = "Test User",
-                UserId = "testuser",
+                UserId = "testuser1",
                 Email = "test@example.com",
                 PhoneNumber = CommonFunc.GenerateRandomE164PhoneNumber(),
                 Password = "password"
             };
 
             // Act
+            _controller.Post(model);
             var result = _controller.Post(model);
+
+            _users.Add(new UserEntity
+            {
+                Name = model.Name,
+                UserId = model.UserId,
+                Email = model.Email,
+                PhoneNumber = model.PhoneNumber,
+                Password = model.Password
+            });
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -177,7 +194,7 @@ namespace BChatServer.Tests.TestSrc.Controllers
             var model = new UserRegisterReceiveModel
             {
                 Name = "Test User",
-                UserId = "testuser",
+                UserId = "testuser2",
                 Email = "test@example.com",
                 PhoneNumber = CommonFunc.GenerateRandomE164PhoneNumber(),
                 Password = "password"
@@ -189,6 +206,32 @@ namespace BChatServer.Tests.TestSrc.Controllers
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.Equal("User registration success", okResult.Value);
+            _users.Add(new UserEntity
+            {
+                Name = model.Name,
+                UserId = model.UserId,
+                Email = model.Email,
+                PhoneNumber = model.PhoneNumber,
+                Password = model.Password
+            });
+        }
+
+
+        /// <summary>
+        /// テスト終了時の後処理
+        /// </summary>
+        public void Dispose()
+        {
+            foreach (var user in _users)
+            {
+                var userToDelete = _context.Users.SingleOrDefault(u => u.UserId == user.UserId);
+                if (userToDelete != null)
+                {
+                    _context.Users.Remove(userToDelete);
+                }
+            }
+            _context.SaveChanges();
+            _context.Dispose();
         }
     }
 }
