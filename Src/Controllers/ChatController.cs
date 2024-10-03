@@ -234,6 +234,7 @@ public class ChatController : ControllerBase{
     /// </summary>
     /// <param name="model"></param>
     /// <returns></returns>
+    [HttpPost("GetChatList")]
     public IActionResult GetChatList([FromBody] ChatGetListReceiveModel model){
         try{
             string userId ;
